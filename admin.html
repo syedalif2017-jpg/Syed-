@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Panel</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+</head>
+
+<body>
+
+<h2>📊 Admin Panel</h2>
+
+<table border="1" id="table">
+<tr>
+<th>Name</th>
+<th>Village</th>
+</tr>
+</table>
+
+<script>
+
+var firebaseConfig = {
+  apiKey: "AIzaSyB7Wv6gS247nbC-eA1Ou1Df9ZY0dct0iLA",
+  authDomain: "syed-3abeb.firebaseapp.com",
+  projectId: "syed-3abeb"
+};
+
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+
+
+// 🌍 LOAD ALL DATA
+db.collectionGroup("customers").get().then(snapshot => {
+
+    let table = document.getElementById("table");
+
+    snapshot.forEach(doc => {
+        let d = doc.data();
+
+        table.innerHTML += `
+        <tr>
+            <td>${d.name}</td>
+            <td>${d.village}</td>
+        </tr>`;
+    });
+
+});
+
+</script>
+
+</body>
+</html>

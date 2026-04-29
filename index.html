@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Business App</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#007bff">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<style>
+body{font-family:Arial;padding:20px}
+input,button{width:100%;padding:10px;margin:5px 0}
+button{background:#007bff;color:white;border:none}
+</style>
+
+</head>
+
+<body>
+
+<h2>🔐 Login</h2>
+<input id="mobile" placeholder="Mobile">
+<input id="password" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+
+<hr>
+
+<h2>👥 Customer</h2>
+<input id="name" placeholder="Name">
+<input id="village" placeholder="Village">
+<button onclick="saveCustomer()">Save Customer</button>
+
+<script>
+
+// 🔥 Firebase Config
+var firebaseConfig = {
+  apiKey: "AIzaSyB7Wv6gS247nbC-eA1Ou1Df9ZY0dct0iLA",
+  authDomain: "syed-3abeb.firebaseapp.com",
+  projectId: "syed-3abeb"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+var auth = firebase.auth();
+var db = firebase.firestore();
+
+
+// 🔐 LOGIN
+function login() {
+    let mobile = document.getElementById("mobile").value;
+    let pass = document.getElementById("password").value;
+
+    let email = mobile + "@app.com";
+
+    auth.signInWithEmailAndPassword(email, pass)
+    .then(() => alert("✅ Login Success"))
+    .catch(() => {
+        auth.createUserWithEmailAndPassword(email, pass)
+        .then(() => alert("✅ Account Created"));
+    });
+}
+
+
+// 💾 SAVE CUSTOMER
+function saveCustomer() {
+    let user = auth.currentUser;
+
+    if(!user){
+        alert("पहले login करो");
+        return;
+    }
+
+    db.collection("users")
+      .doc(user.uid)
+      .collection("customers")
+      .add({
+          name: document.getElementById("name").value,
+          village: document.getElementById("village").value,
+          time: new Date()
+      })
+      .then(() => alert("✅ Saved"));
+}
+
+
+// 🔥 Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+
+</script>
+
+</body>
+</html>
