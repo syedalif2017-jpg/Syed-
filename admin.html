@@ -2,51 +2,49 @@
 <html>
 <head>
 <title>Admin Panel</title>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
 </head>
 
 <body>
 
 <h2>📊 Admin Panel</h2>
 
-<table border="1" id="table">
-<tr>
-<th>Name</th>
-<th>Village</th>
-</tr>
-</table>
+<h3>Customers</h3>
+<table border="1" id="c"></table>
 
-<script>
+<h3>Fuel</h3>
+<table border="1" id="f"></table>
 
-var firebaseConfig = {
+<h3>Expense</h3>
+<table border="1" id="e"></table>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collectionGroup, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
   apiKey: "AIzaSyB7Wv6gS247nbC-eA1Ou1Df9ZY0dct0iLA",
   authDomain: "syed-3abeb.firebaseapp.com",
   projectId: "syed-3abeb"
 };
 
-firebase.initializeApp(firebaseConfig);
-var db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
+// LOAD DATA
+load("customers","c");
+load("fuel","f");
+load("expense","e");
 
-// 🌍 LOAD ALL DATA
-db.collectionGroup("customers").get().then(snapshot => {
+async function load(col,id){
+  let snap = await getDocs(collectionGroup(db,col));
+  let table = document.getElementById(id);
 
-    let table = document.getElementById("table");
-
-    snapshot.forEach(doc => {
-        let d = doc.data();
-
-        table.innerHTML += `
-        <tr>
-            <td>${d.name}</td>
-            <td>${d.village}</td>
-        </tr>`;
-    });
-
-});
+  snap.forEach(doc=>{
+    let d = doc.data();
+    table.innerHTML += `<tr><td>${JSON.stringify(d)}</td></tr>`;
+  });
+}
 
 </script>
 

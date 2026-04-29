@@ -2,96 +2,190 @@
 <html>
 <head>
 <title>Business App</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#007bff">
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
 <style>
-body{font-family:Arial;padding:20px}
+body{font-family:Arial;padding:15px}
 input,button{width:100%;padding:10px;margin:5px 0}
 button{background:#007bff;color:white;border:none}
+.section{border:1px solid #ddd;padding:10px;margin-top:15px}
 </style>
-
 </head>
 
 <body>
 
 <h2>🔐 Login</h2>
-<input id="mobile" placeholder="Mobile">
+<input id="mobile" placeholder="Mobile Number">
 <input id="password" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
 
-<hr>
+<div class="section">
+<h3>📋 Menu</h3>
+<button onclick="show('customer')">Customer</button>
+<button onclick="show('fuel')">Fuel</button>
+<button onclick="show('expense')">Expense</button>
+</div>
 
-<h2>👥 Customer</h2>
+<!-- CUSTOMER -->
+<div id="customer" class="section" style="display:none">
+<h3>👥 Customer</h3>
+
+<input id="rate" placeholder="Rate">
 <input id="name" placeholder="Name">
 <input id="village" placeholder="Village">
-<button onclick="saveCustomer()">Save Customer</button>
 
-<script>
+<label>Start Time</label>
+<input type="time" id="start">
 
-// 🔥 Firebase Config
-var firebaseConfig = {
+<label>End Time</label>
+<input type="time" id="end">
+
+<button onclick="saveCustomer()">Save</button>
+<p id="total"></p>
+</div>
+
+<!-- FUEL -->
+<div id="fuel" class="section" style="display:none">
+<h3>⛽ Fuel</h3>
+
+<input id="fuelRate" placeholder="Rate">
+<input id="litre" placeholder="Litre">
+
+<button onclick="saveFuel()">Save</button>
+<p id="fuelTotal"></p>
+</div>
+
+<!-- EXPENSE -->
+<div id="expense" class="section" style="display:none">
+<h3>💸 Expense</h3>
+
+<input id="e1" placeholder="Expense 1">
+<input id="e2" placeholder="Expense 2">
+<input id="e3" placeholder="Expense 3">
+
+<button onclick="saveExpense()">Save</button>
+</div>
+
+<!-- 🔥 FIREBASE V9 -->
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+import {
+  getFirestore,
+  collection,
+  addDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// CONFIG
+const firebaseConfig = {
   apiKey: "AIzaSyB7Wv6gS247nbC-eA1Ou1Df9ZY0dct0iLA",
   authDomain: "syed-3abeb.firebaseapp.com",
-  projectId: "syed-3abeb"
+  projectId: "syed-3abeb",
+  storageBucket: "syed-3abeb.firebasestorage.app",
+  messagingSenderId: "445803338542",
+  appId: "1:445803338542:web:b101660fb248b0ff0a38bf"
 };
 
-firebase.initializeApp(firebaseConfig);
+// INIT
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-var auth = firebase.auth();
-var db = firebase.firestore();
-
-
-// 🔐 LOGIN
-function login() {
-    let mobile = document.getElementById("mobile").value;
-    let pass = document.getElementById("password").value;
-
-    let email = mobile + "@app.com";
-
-    auth.signInWithEmailAndPassword(email, pass)
-    .then(() => alert("✅ Login Success"))
-    .catch(() => {
-        auth.createUserWithEmailAndPassword(email, pass)
-        .then(() => alert("✅ Account Created"));
-    });
+// SHOW SECTION
+window.show = function(id){
+  document.getElementById("customer").style.display="none";
+  document.getElementById("fuel").style.display="none";
+  document.getElementById("expense").style.display="none";
+  document.getElementById(id).style.display="block";
 }
 
+// LOGIN
+window.login = async function(){
+  let mobile = document.getElementById("mobile").value;
+  let pass = document.getElementById("password").value;
 
-// 💾 SAVE CUSTOMER
-function saveCustomer() {
-    let user = auth.currentUser;
+  let email = mobile + "@app.com";
 
-    if(!user){
-        alert("पहले login करो");
-        return;
-    }
-
-    db.collection("users")
-      .doc(user.uid)
-      .collection("customers")
-      .add({
-          name: document.getElementById("name").value,
-          village: document.getElementById("village").value,
-          time: new Date()
-      })
-      .then(() => alert("✅ Saved"));
+  try{
+    await signInWithEmailAndPassword(auth, email, pass);
+    alert("Login Success");
+  }catch{
+    await createUserWithEmailAndPassword(auth, email, pass);
+    alert("Account Created");
+  }
 }
 
+// CUSTOMER
+window.saveCustomer = async function(){
+  let user = auth.currentUser;
+  if(!user){ alert("Login first"); return; }
 
-// 🔥 Service Worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js');
+  let rate = Number(rateInput());
+  let start = time("start");
+  let end = time("end");
+
+  let minutes = (end - start)/60000;
+  let total = (rate/60)*minutes;
+
+  document.getElementById("total").innerText = "Total ₹ " + total;
+
+  await addDoc(collection(db,"users",user.uid,"customers"),{
+    name: val("name"),
+    village: val("village"),
+    rate, minutes, total,
+    date:new Date()
+  });
+
+  alert("Saved");
 }
+
+// FUEL
+window.saveFuel = async function(){
+  let user = auth.currentUser;
+  if(!user){ alert("Login first"); return; }
+
+  let rate = Number(val("fuelRate"));
+  let litre = Number(val("litre"));
+
+  let total = rate * litre;
+  document.getElementById("fuelTotal").innerText = "Total ₹ " + total;
+
+  await addDoc(collection(db,"users",user.uid,"fuel"),{
+    rate, litre, total, date:new Date()
+  });
+
+  alert("Saved");
+}
+
+// EXPENSE
+window.saveExpense = async function(){
+  let user = auth.currentUser;
+  if(!user){ alert("Login first"); return; }
+
+  await addDoc(collection(db,"users",user.uid,"expense"),{
+    e1: val("e1"),
+    e2: val("e2"),
+    e3: val("e3"),
+    date:new Date()
+  });
+
+  alert("Saved");
+}
+
+// HELPERS
+function val(id){ return document.getElementById(id).value; }
+function rateInput(){ return document.getElementById("rate").value; }
+function time(id){ return new Date("1970-01-01T"+document.getElementById(id).value); }
 
 </script>
 
