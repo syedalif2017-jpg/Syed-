@@ -1,52 +1,147 @@
 <!DOCTYPE html>
-<html>
+<html lang="hi">
 <head>
-<title>Admin Panel</title>
-</head>
+    <meta charset="UTF-8">
+    <title>Syed Admin - Email Access</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --admin-bg: #1e293b; --primary: #3b82f6; --success: #10b981; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; margin: 0; padding: 0; }
+        
+        /* 🔐 Email Login Box */
+        #adminAuth { max-width: 400px; margin: 100px auto; background: white; padding: 35px; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center; border-top: 5px solid var(--primary); }
+        input { width: 100%; padding: 14px; margin: 12px 0; border: 1px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 15px; }
+        .btn-login { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
 
+        /* 📊 Dashboard */
+        #adminDashboard { display: none; }
+        .top-header { background: var(--admin-bg); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+        .container { padding: 25px; max-width: 1200px; margin: auto; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); }
+        .stat-card h3 { margin: 0; color: #64748b; font-size: 13px; text-transform: uppercase; }
+        .stat-card .val { font-size: 28px; font-weight: 800; margin-top: 8px; color: #1e293b; }
+
+        .table-box { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; background: #f1f5f9; padding: 15px; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    </style>
+</head>
 <body>
 
-<h2>📊 Admin Panel</h2>
+<div id="adminAuth">
+    <i class="fas fa-user-lock" style="font-size: 50px; color: var(--primary); margin-bottom: 15px;"></i>
+    <h2 style="margin:0;">Admin Access</h2>
+    <p style="color: #64748b;">Login with your Email ID</p>
+    <input type="email" id="admEmail" placeholder="example@gmail.com">
+    <input type="password" id="admPass" placeholder="Password">
+    <button class="btn-login" onclick="adminLogin()">Login to Dashboard</button>
+</div>
 
-<h3>Customers</h3>
-<table border="1" id="c"></table>
+<div id="adminDashboard">
+    <div class="top-header">
+        <span><b>Syed Business Admin</b></span>
+        <button onclick="adminLogout()" style="background:#475569; border:none; color:white; padding:8px 15px; border-radius:8px; cursor:pointer;">Logout</button>
+    </div>
 
-<h3>Fuel</h3>
-<table border="1" id="f"></table>
+    <div class="container">
+        <div class="stats-grid" id="statsArea">
+            <div class="stat-card"><h3>Total Revenue</h3><div class="val" id="totalRev">₹ 0</div></div>
+            <div class="stat-card" style="border-color:#10b981;"><h3>Total Entries</h3><div class="val" id="totalCount">0</div></div>
+        </div>
 
-<h3>Expense</h3>
-<table border="1" id="e"></table>
+        <div class="table-box">
+            <h3><i class="fas fa-history"></i> All Transactions</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>User</th>
+                        <th>Customer</th>
+                        <th>Village</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="adminDataTable"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collectionGroup, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collectionGroup, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    const firebaseConfig = { 
+        apiKey: "AIzaSyB7Wv6gS247nbC-eA1Ou1Df9ZY0dct0iLA", 
+        authDomain: "syed-3abeb.firebaseapp.com", 
+        projectId: "syed-3abeb" 
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-const firebaseConfig = {
-  apiKey: "AIzaSyB7Wv6gS247nbC-eA1Ou1Df9ZY0dct0iLA",
-  authDomain: "syed-3abeb.firebaseapp.com",
-  projectId: "syed-3abeb"
-};
+    // ✅ Apka Admin UID (Wahi rahega)
+    const ADMIN_UID = "DoIAhN0KRRatecApzXoIelZhuUq2"; 
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    window.adminLogin = async () => {
+        let e = document.getElementById("admEmail").value;
+        let p = document.getElementById("admPass").value;
+        
+        if(!e || !p) { alert("Email aur Password dono bhariye!"); return; }
 
-// LOAD DATA
-load("customers","c");
-load("fuel","f");
-load("expense","e");
+        try {
+            await signInWithEmailAndPassword(auth, e, p);
+        } catch(err) { 
+            alert("Login Failed: " + err.message); 
+        }
+    };
 
-async function load(col,id){
-  let snap = await getDocs(collectionGroup(db,col));
-  let table = document.getElementById(id);
+    window.adminLogout = () => { signOut(auth).then(() => location.reload()); };
 
-  snap.forEach(doc=>{
-    let d = doc.data();
-    table.innerHTML += `<tr><td>${JSON.stringify(d)}</td></tr>`;
-  });
-}
+    onAuthStateChanged(auth, (user) => {
+        if (user && user.uid === ADMIN_UID) {
+            document.getElementById("adminAuth").style.display = "none";
+            document.getElementById("adminDashboard").style.display = "block";
+            fetchGlobalData();
+        } else {
+            document.getElementById("adminAuth").style.display = "block";
+            document.getElementById("adminDashboard").style.display = "none";
+        }
+    });
 
+    async function fetchGlobalData() {
+        const table = document.getElementById("adminDataTable");
+        table.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Data load ho raha hai...</td></tr>";
+        let revenue = 0; let count = 0;
+
+        try {
+            const snap = await getDocs(query(collectionGroup(db, 'customers'), orderBy("ts", "desc")));
+            table.innerHTML = "";
+            snap.forEach(doc => {
+                let d = doc.data();
+                revenue += parseFloat(d.total.replace('₹ ', '')) || 0;
+                count++;
+                table.innerHTML += `
+                    <tr>
+                        <td>${d.date}</td>
+                        <td><small>${doc.ref.parent.parent.id.substring(0,5)}</small></td>
+                        <td><b>${d.name}</b></td>
+                        <td>${d.village}</td>
+                        <td style="color:green; font-weight:bold;">${d.total}</td>
+                    </tr>`;
+            });
+            document.getElementById("totalRev").innerText = "₹ " + revenue.toFixed(2);
+            document.getElementById("totalCount").innerText = count;
+        } catch(e) { 
+            table.innerHTML = "<tr><td colspan='5'>Error: Index setup zaroori hai. Console check karein.</td></tr>";
+        }
+    }
 </script>
-
 </body>
 </html>

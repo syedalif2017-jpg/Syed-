@@ -1,193 +1,335 @@
 <!DOCTYPE html>
-<html>
+<html lang="hi">
 <head>
-<title>Business App</title>
+<title>Business Pro App</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#007bff">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 <style>
-body{font-family:Arial;padding:15px}
-input,button{width:100%;padding:10px;margin:5px 0}
-button{background:#007bff;color:white;border:none}
-.section{border:1px solid #ddd;padding:10px;margin-top:15px}
+body{font-family:'Segoe UI', sans-serif; padding:15px; background:#f0f2f5; margin:0; padding-bottom: 80px;}
+input,button{width:100%; padding:12px; margin:8px 0; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size: 15px;}
+button{background:#007bff; color:white; border:none; font-weight:bold; cursor:pointer;}
+button:disabled{background:#ccc; cursor: not-allowed;}
+
+.section{background:white; border:1px solid #ddd; padding:18px; margin-top:15px; border-radius:12px; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.05);}
+.active-sec{display:block;}
+
+.user-header { background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 20px; margin: -15px -15px 20px -15px; display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 20px 20px; }
+
+.summary-box { background:#f8fbff; border:1px solid #b3d7ff; padding:15px; border-radius:10px; margin-top:12px; display:none; }
+.summary-line { display:flex; justify-content:space-between; border-bottom:1px solid #e1efff; padding:8px 0; font-size:14px; }
+.total-text { font-weight:bold; color:#28a745; font-size:18px; border:none; }
+
+/* 📋 Enhanced History Card */
+.hist-card { background: white; border-left: 6px solid #007bff; padding: 15px; margin-bottom: 12px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.hist-title { font-size: 16px; font-weight: bold; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+.hist-row { display: flex; justify-content: space-between; font-size: 13px; color: #555; margin: 5px 0; padding-bottom: 2px; border-bottom: 1px dotted #f0f0f0; }
+.hist-total { font-size: 16px; font-weight: bold; color: #28a745; margin-top: 10px; text-align: right; border-top: 1px dashed #ddd; padding-top: 8px; }
+.date-badge { font-size: 10px; background: #e9ecef; padding: 2px 6px; border-radius: 4px; color: #666; }
+
+.menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top:5px; }
+.menu-item { background: white; padding: 15px 5px; text-align: center; border-radius: 12px; border: 1px solid #eee; cursor: pointer; }
+.bottom-nav { position:fixed; bottom:0; left:0; width:100%; background:white; display:flex; border-top:1px solid #eee; height:70px; z-index:1000; }
+.nav-btn { flex:1; text-align:center; padding:12px 0; color:#888; font-size:12px; cursor:pointer; }
+.nav-btn.active { color:#007bff; font-weight: bold; }
+.edit-btn { background:#ffc107; color:#212529; padding:6px 15px; width:auto; font-size:12px; margin-top:10px; border-radius:6px; display:inline-block; border:none; }
+
+#profileSection { position: fixed; top: 15%; left: 5%; width: 90%; background: white; z-index: 2001; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+.overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; }
 </style>
 </head>
 
 <body>
 
-<h2>🔐 Login</h2>
-<input id="mobile" placeholder="Mobile Number">
-<input id="password" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
+<div id="overlay" class="overlay" onclick="closeProfile()"></div>
 
-<div class="section">
-<h3>📋 Menu</h3>
-<button onclick="show('customer')">Customer</button>
-<button onclick="show('fuel')">Fuel</button>
-<button onclick="show('expense')">Expense</button>
+<div id="authSection" class="section active-sec">
+    <h2 id="authTitle" style="text-align:center;">🔐 Login</h2>
+    <div id="regFields" style="display:none"><input id="regName" placeholder="👤 Full Name"></div>
+    <input id="mobile" placeholder="📱 Mobile Number" type="tel">
+    <input id="password" type="password" placeholder="🔑 Password">
+    <button id="authBtn" onclick="handleAuth()">Login</button>
+    <p style="text-align:center; font-size:14px; color: #666;" onclick="toggleAuth()"><span id="toggleText">New User? Register here</span></p>
 </div>
 
-<!-- CUSTOMER -->
-<div id="customer" class="section" style="display:none">
-<h3>👥 Customer</h3>
+<div id="dashboard" style="display:none">
+    <div class="user-header">
+        <span>👋 Hi, <b id="displayUserName">User</b></span>
+        <i class="fas fa-user-circle" style="font-size:24px; cursor:pointer;" onclick="openProfile()"></i>
+    </div>
+    
+    <div id="profileSection" class="section">
+        <h3>👤 Profile Settings</h3>
+        <input id="editName" placeholder="Update Your Name">
+        <button onclick="updateProfile()">Save New Name</button>
+        <button onclick="closeProfile()" style="background:#6c757d;">Cancel</button>
+    </div>
 
-<input id="rate" placeholder="Rate">
-<input id="name" placeholder="Name">
-<input id="village" placeholder="Village">
+    <div class="menu-grid">
+        <div class="menu-item" onclick="show('customer')"><i class="fas fa-user-plus"></i><br>Customer</div>
+        <div class="menu-item" onclick="show('fuel')"><i class="fas fa-gas-pump"></i><br>Fuel</div>
+        <div class="menu-item" onclick="show('expense')"><i class="fas fa-file-invoice-dollar"></i><br>Others</div>
+    </div>
 
-<label>Start Time</label>
-<input type="time" id="start">
+    <div id="customer" class="section active-sec">
+        <h3>👥 Customer Entry</h3>
+        <input id="docId" type="hidden"> <input id="name" placeholder="👤 Customer Name">
+        <input id="village" placeholder="🏡 Village Name">
+        <input id="rate" type="number" placeholder="💰 Rate per Hour" oninput="calcCust()">
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1"><label style="font-size:12px;">🕒 Start</label><input type="time" id="start" oninput="calcCust()"></div>
+            <div style="flex:1"><label style="font-size:12px;">🕒 End</label><input type="time" id="end" oninput="calcCust()"></div>
+        </div>
+        <div id="custRes" class="summary-box">
+            <div class="summary-line"><span>⏳ Total Minutes:</span> <span id="resMins">0</span></div>
+            <div class="summary-line total-text"><span>💵 Total Amount:</span> <span id="resTotal">₹ 0.00</span></div>
+        </div>
+        <button id="btnCust" onclick="saveCustomer()">✅ Save/Update Customer</button>
+        <button id="nextCust" onclick="reset('cust')" style="background:#28a745; display:none;">➕ Add Next Customer</button>
+    </div>
 
-<label>End Time</label>
-<input type="time" id="end">
+    <div id="fuel" class="section">
+        <h3>⛽ Fuel Entry</h3>
+        <input id="fDocId" type="hidden"> <label>📅 Date</label><input type="date" id="fDate">
+        <input id="fRate" type="number" placeholder="⛽ Rate per Litre" oninput="calcFuel()">
+        <input id="fLitre" type="number" placeholder="🧪 Litres" oninput="calcFuel()">
+        <div id="fuelRes" class="summary-box"><div class="summary-line total-text"><span>💰 Total:</span> <span id="resFuel">₹ 0.00</span></div></div>
+        <button id="btnFuel" onclick="saveFuel()">✅ Save/Update Fuel</button>
+        <button id="nextFuel" onclick="reset('fuel')" style="background:#28a745; display:none;">➕ Add Next Fuel</button>
+    </div>
 
-<button onclick="saveCustomer()">Save</button>
-<p id="total"></p>
+    <div id="expense" class="section">
+        <h3>💸 Others / Information</h3>
+        <div id="expBox"></div>
+        <button id="btnExp" onclick="saveExpense()">✅ Save All Info (Unique)</button>
+    </div>
 </div>
 
-<!-- FUEL -->
-<div id="fuel" class="section" style="display:none">
-<h3>⛽ Fuel</h3>
-
-<input id="fuelRate" placeholder="Rate">
-<input id="litre" placeholder="Litre">
-
-<button onclick="saveFuel()">Save</button>
-<p id="fuelTotal"></p>
+<div id="history" style="display:none; padding:10px;">
+    <h3>📋 Records History</h3>
+    <div style="display:flex; gap:8px; margin-bottom:15px;">
+        <button onclick="loadHist('customers')" style="font-size:11px; padding:8px;">👤 Customer</button>
+        <button onclick="loadHist('fuel')" style="font-size:11px; padding:8px;">⛽ Fuel</button>
+        <button onclick="loadHist('info')" style="font-size:11px; padding:8px;">📝 Info</button>
+    </div>
+    <div id="histData"></div>
 </div>
 
-<!-- EXPENSE -->
-<div id="expense" class="section" style="display:none">
-<h3>💸 Expense</h3>
+<nav class="bottom-nav" id="nav" style="display:none">
+    <div class="nav-btn active" id="n1" onclick="tab('dash')"><i class="fas fa-home"></i>Home</div>
+    <div class="nav-btn" id="n2" onclick="tab('hist')"><i class="fas fa-history"></i>History</div>
+    <div class="nav-btn" onclick="confirmExit()"><i class="fas fa-sign-out-alt"></i>Exit</div>
+</nav>
 
-<input id="e1" placeholder="Expense 1">
-<input id="e2" placeholder="Expense 2">
-<input id="e3" placeholder="Expense 3">
-
-<button onclick="saveExpense()">Save</button>
-</div>
-
-<!-- 🔥 FIREBASE V9 -->
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-import {
-  getFirestore,
-  collection,
-  addDoc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSyB7Wv6gS247nbC-eA1Ou1Df9ZY0dct0iLA",
-  authDomain: "syed-3abeb.firebaseapp.com",
-  projectId: "syed-3abeb",
-  storageBucket: "syed-3abeb.firebasestorage.app",
-  messagingSenderId: "445803338542",
-  appId: "1:445803338542:web:b101660fb248b0ff0a38bf"
-};
-
-// INIT
+const firebaseConfig = { apiKey: "AIzaSyB7Wv6gS247nbC-eA1Ou1Df9ZY0dct0iLA", authDomain: "syed-3abeb.firebaseapp.com", projectId: "syed-3abeb" };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// SHOW SECTION
-window.show = function(id){
-  document.getElementById("customer").style.display="none";
-  document.getElementById("fuel").style.display="none";
-  document.getElementById("expense").style.display="none";
-  document.getElementById(id).style.display="block";
-}
+let isLoginMode = true;
 
-// LOGIN
-window.login = async function(){
-  let mobile = document.getElementById("mobile").value;
-  let pass = document.getElementById("password").value;
+window.toggleAuth = () => {
+    isLoginMode = !isLoginMode;
+    document.getElementById("authTitle").innerText = isLoginMode ? "🔐 Login" : "📝 Register";
+    document.getElementById("regFields").style.display = isLoginMode ? "none" : "block";
+};
 
-  let email = mobile + "@app.com";
+window.handleAuth = async () => {
+    let m = document.getElementById("mobile").value;
+    let p = document.getElementById("password").value;
+    let n = document.getElementById("regName").value;
+    if(!m || !p) return;
+    try {
+        if(isLoginMode) { await signInWithEmailAndPassword(auth, m+"@app.com", p); }
+        else { let cred = await createUserWithEmailAndPassword(auth, m+"@app.com", p); await setDoc(doc(db, "userProfiles", cred.user.uid), { name: n }); }
+    } catch (e) { alert(e.message); }
+};
 
-  try{
-    await signInWithEmailAndPassword(auth, email, pass);
-    alert("Login Success");
-  }catch{
-    await createUserWithEmailAndPassword(auth, email, pass);
-    alert("Account Created");
-  }
-}
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        let p = await getDoc(doc(db, "userProfiles", user.uid));
+        document.getElementById("displayUserName").innerText = p.exists() ? p.data().name : "User";
+        document.getElementById("authSection").style.display = "none"; document.getElementById("dashboard").style.display = "block"; document.getElementById("nav").style.display = "flex";
+        loadInfo(); 
+    } else {
+        document.getElementById("authSection").style.display = "block"; document.getElementById("dashboard").style.display = "none"; document.getElementById("nav").style.display = "none";
+    }
+});
 
-// CUSTOMER
-window.saveCustomer = async function(){
-  let user = auth.currentUser;
-  if(!user){ alert("Login first"); return; }
+const box = document.getElementById('expBox');
+for(let i=1; i<=10; i++) box.innerHTML += `<input id="e${i}" placeholder="📝 Info Item ${i}">`;
+document.getElementById('fDate').valueAsDate = new Date();
 
-  let rate = Number(rateInput());
-  let start = time("start");
-  let end = time("end");
+window.show = (id) => { ['customer','fuel','expense'].forEach(s => document.getElementById(s).classList.remove('active-sec')); document.getElementById(id).classList.add('active-sec'); };
+window.tab = (t) => { 
+    document.getElementById("dashboard").style.display = t==='dash'?'block':'none'; 
+    document.getElementById("history").style.display = t==='hist'?'block':'none'; 
+    document.getElementById("n1").classList.toggle('active', t==='dash'); 
+    document.getElementById("n2").classList.toggle('active', t==='hist'); 
+    if(t==='hist') loadHist('customers'); 
+};
 
-  let minutes = (end - start)/60000;
-  let total = (rate/60)*minutes;
+window.confirmExit = () => {
+    if(confirm("Kya aap app se bahar nikalna chahte hain?")) {
+        signOut(auth).then(() => { location.reload(); });
+    }
+};
 
-  document.getElementById("total").innerText = "Total ₹ " + total;
+window.openProfile = async () => {
+    let p = await getDoc(doc(db, "userProfiles", auth.currentUser.uid));
+    if(p.exists()) document.getElementById("editName").value = p.data().name;
+    document.getElementById("profileSection").style.display = "block";
+    document.getElementById("overlay").style.display = "block";
+};
+window.closeProfile = () => {
+    document.getElementById("profileSection").style.display = "none";
+    document.getElementById("overlay").style.display = "none";
+};
+window.updateProfile = async () => {
+    let newName = document.getElementById("editName").value;
+    if(!newName) return;
+    await setDoc(doc(db, "userProfiles", auth.currentUser.uid), { name: newName }, { merge: true });
+    document.getElementById("displayUserName").innerText = newName;
+    alert("Profile Updated! ✅"); closeProfile();
+};
 
-  await addDoc(collection(db,"users",user.uid,"customers"),{
-    name: val("name"),
-    village: val("village"),
-    rate, minutes, total,
-    date:new Date()
-  });
+window.calcCust = () => {
+    let r = Number(document.getElementById("rate").value);
+    let s = document.getElementById("start").value;
+    let e = document.getElementById("end").value;
+    if(r && s && e) {
+        let diff = (new Date("1970-01-01T"+e) - new Date("1970-01-01T"+s)) / 60000;
+        if(diff < 0) diff += 1440;
+        document.getElementById("custRes").style.display="block"; document.getElementById("resMins").innerText = diff + " Mins"; document.getElementById("resTotal").innerText = "₹ " + ((r/60)*diff).toFixed(2);
+    }
+};
 
-  alert("Saved");
-}
+window.calcFuel = () => {
+    let r = Number(document.getElementById("fRate").value); let l = Number(document.getElementById("fLitre").value);
+    if(r && l) { document.getElementById("fuelRes").style.display="block"; document.getElementById("resFuel").innerText = "₹ " + (r*l).toFixed(2); }
+};
 
-// FUEL
-window.saveFuel = async function(){
-  let user = auth.currentUser;
-  if(!user){ alert("Login first"); return; }
+window.saveExpense = async () => {
+    let btn = document.getElementById("btnExp");
+    btn.disabled = true;
+    let info = {};
+    for(let i=1; i<=10; i++) { info[`item${i}`] = document.getElementById(`e${i}`).value; }
+    try {
+        await setDoc(doc(db, "users", auth.currentUser.uid, "info", "general"), { ...info, ts: new Date() }, { merge: true });
+        alert("Information Saved! ✅");
+        btn.disabled = false;
+    } catch(e) { alert("Error: "+e.message); btn.disabled = false; }
+};
 
-  let rate = Number(val("fuelRate"));
-  let litre = Number(val("litre"));
+const loadInfo = async () => {
+    const s = await getDoc(doc(db, "users", auth.currentUser.uid, "info", "general"));
+    if(s.exists()){ const d = s.data(); for(let i=1; i<=10; i++){ document.getElementById(`e${i}`).value = d[`item${i}`] || ""; } }
+};
 
-  let total = rate * litre;
-  document.getElementById("fuelTotal").innerText = "Total ₹ " + total;
+window.saveCustomer = async () => {
+    let btn = document.getElementById("btnCust");
+    let docId = document.getElementById("docId").value;
+    btn.disabled = true;
+    let data = { name: document.getElementById("name").value, village: document.getElementById("village").value, rate: document.getElementById("rate").value, start: document.getElementById("start").value, end: document.getElementById("end").value, minutes: document.getElementById("resMins").innerText, total: document.getElementById("resTotal").innerText, date: new Date().toLocaleDateString('en-IN'), ts: new Date() };
+    try {
+        if(docId) { await updateDoc(doc(db, "users", auth.currentUser.uid, "customers", docId), data); alert("Updated!"); }
+        else { await addDoc(collection(db, "users", auth.currentUser.uid, "customers"), data); alert("Saved!"); }
+        btn.style.display="none"; document.getElementById("nextCust").style.display="block";
+    } catch(e) { alert(e.message); btn.disabled=false; }
+};
 
-  await addDoc(collection(db,"users",user.uid,"fuel"),{
-    rate, litre, total, date:new Date()
-  });
+window.saveFuel = async () => {
+    let btn = document.getElementById("btnFuel");
+    let fDocId = document.getElementById("fDocId").value;
+    btn.disabled = true;
+    let data = { date: document.getElementById("fDate").value, rate: document.getElementById("fRate").value, litre: document.getElementById("fLitre").value, total: document.getElementById("resFuel").innerText, ts: new Date() };
+    try {
+        if(fDocId) { await updateDoc(doc(db, "users", auth.currentUser.uid, "fuel", fDocId), data); alert("Fuel Updated!"); }
+        else { await addDoc(collection(db, "users", auth.currentUser.uid, "fuel"), data); alert("Fuel Saved!"); }
+        btn.style.display="none"; document.getElementById("nextFuel").style.display="block";
+    } catch(e) { alert(e.message); btn.disabled=false; }
+};
 
-  alert("Saved");
-}
+window.reset = (type) => {
+    if(type==='cust') { 
+        document.getElementById("docId").value = "";
+        ['name','village','rate','start','end'].forEach(i=>document.getElementById(i).value="");
+        document.getElementById("btnCust").style.display="block"; document.getElementById("btnCust").disabled=false; document.getElementById("nextCust").style.display="none";
+        document.getElementById("custRes").style.display="none";
+    } else if(type==='fuel') {
+        document.getElementById("fDocId").value = "";
+        ['fRate','fLitre'].forEach(i=>document.getElementById(i).value="");
+        document.getElementById("btnFuel").style.display="block"; document.getElementById("btnFuel").disabled=false; document.getElementById("nextFuel").style.display="none";
+        document.getElementById("fuelRes").style.display="none";
+    }
+};
 
-// EXPENSE
-window.saveExpense = async function(){
-  let user = auth.currentUser;
-  if(!user){ alert("Login first"); return; }
+// FIX: COMPLETE DATA SHOWING IN HISTORY
+window.loadHist = async (col) => {
+    const h = document.getElementById("histData"); h.innerHTML = "🔄 Loading Records...";
+    try {
+        const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, col), orderBy("ts", "desc")));
+        h.innerHTML = "";
+        if(snap.empty) { h.innerHTML = "No records found."; return; }
+        
+        snap.forEach(dDoc => {
+            let d = dDoc.data();
+            let content = `<div class="hist-card">`;
+            
+            if(col === 'customers') {
+                content += `
+                    <div class="hist-title"><span>👤 ${d.name}</span> <span class="date-badge">${d.date}</span></div>
+                    <div class="hist-row"><span>🏡 Village:</span><b>${d.village}</b></div>
+                    <div class="hist-row"><span>🕒 Time:</span><b>${d.start} to ${d.end}</b></div>
+                    <div class="hist-row"><span>⏳ Duration:</span><b>${d.minutes}</b></div>
+                    <div class="hist-row"><span>💰 Rate:</span><b>₹${d.rate}/hr</b></div>
+                    <div class="hist-total">Total Amount: ${d.total}</div>
+                    <button class="edit-btn" onclick="editData('${col}','${dDoc.id}')">✏️ Edit Record</button>`;
+            } 
+            else if(col === 'fuel') {
+                content += `
+                    <div class="hist-title"><span>⛽ Fuel Entry</span> <span class="date-badge">${d.date}</span></div>
+                    <div class="hist-row"><span>🧪 Litres:</span><b>${d.litre} Ltr</b></div>
+                    <div class="hist-row"><span>⛽ Rate:</span><b>₹${d.rate}/ltr</b></div>
+                    <div class="hist-total">Total Expense: ${d.total}</div>
+                    <button class="edit-btn" onclick="editData('${col}','${dDoc.id}')">✏️ Edit Record</button>`;
+            } 
+            else if(col === 'info') {
+                content += `<div class="hist-title">📝 Other Information</div>`;
+                for(let i=1; i<=10; i++) {
+                    if(d[`item${i}`]) content += `<div class="hist-row"><span>Item ${i}:</span><b>${d[`item${i}`]}</b></div>`;
+                }
+                content += `<button class="edit-btn" onclick="editData('info','general')">✏️ Edit Information</button>`;
+            }
+            
+            content += `</div>`;
+            h.innerHTML += content;
+        });
+    } catch(e) { h.innerHTML = "Error loading history."; }
+};
 
-  await addDoc(collection(db,"users",user.uid,"expense"),{
-    e1: val("e1"),
-    e2: val("e2"),
-    e3: val("e3"),
-    date:new Date()
-  });
-
-  alert("Saved");
-}
-
-// HELPERS
-function val(id){ return document.getElementById(id).value; }
-function rateInput(){ return document.getElementById("rate").value; }
-function time(id){ return new Date("1970-01-01T"+document.getElementById(id).value); }
-
+window.editData = async (col, id) => {
+    const s = await getDoc(doc(db, "users", auth.currentUser.uid, col, id));
+    if(!s.exists()) return;
+    const d = s.data(); 
+    tab('dash');
+    if(col === 'customers') { 
+        show('customer'); document.getElementById("docId").value = id;
+        document.getElementById("name").value = d.name; document.getElementById("village").value = d.village; 
+        document.getElementById("rate").value = d.rate; document.getElementById("start").value = d.start; document.getElementById("end").value = d.end; calcCust(); 
+    } else if(col === 'fuel') { 
+        show('fuel'); document.getElementById("fDocId").value = id;
+        document.getElementById("fDate").value = d.date; document.getElementById("fRate").value = d.rate; document.getElementById("fLitre").value = d.litre; calcFuel(); 
+    } else if(col === 'info') {
+        show('expense');
+        for(let i=1; i<=10; i++){ document.getElementById(`e${i}`).value = d[`item${i}`] || ""; }
+    }
+};
 </script>
-
 </body>
 </html>
