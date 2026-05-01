@@ -95,7 +95,9 @@
     </div>
     <div id="fuel" class="section">
         <h3>⛽ Fuel Entry</h3>
-        <input id="fDocId" type="hidden"> <label>📅 Date</label><input type="date" id="fDate">
+        <input id="fDocId" type="hidden"> 
+        <label>📅 Date</label><input type="date" id="fDate">
+        <label>🕒 Time</label><input type="time" id="fTime">
         <input id="fRate" type="number" placeholder="⛽ Rate per Litre" oninput="calcFuel()">
         <input id="fLitre" type="number" placeholder="🧪 Litres" oninput="calcFuel()">
         <div id="fuelRes" class="summary-box"><div class="summary-line total-text"><span>💰 Total:</span> <span id="resFuel">₹ 0.00</span></div></div>
@@ -117,7 +119,8 @@
         <button onclick="loadHist('customers')" style="font-size:11px; padding:8px; background:#007bff;">👤 Cust</button>
         <button onclick="loadHist('fuel')" style="font-size:11px; padding:8px; background:#007bff;">⛽ Fuel</button>
         <button onclick="loadHist('expenses')" style="font-size:11px; padding:8px; background:#007bff;">💸 Info</button>
-        <button onclick="loadReport()" style="font-size:11px; padding:8px; background:#28a745;">📊 Report</button>
+        <button onclick="loadReport()" style="font-size:11px; padding:8px; background:#28a745;">📊 Cust Rep</button>
+        <button onclick="loadFuelReport()" style="font-size:11px; padding:8px; background:#fd7e14;">⛽ Fuel Rep</button>
     </div>
     <div id="histData"></div>
 </div>
@@ -125,7 +128,7 @@
 <nav class="bottom-nav" id="nav" style="display:none">
     <div class="nav-btn active" id="n1" onclick="tab('dash')"><i class="fas fa-home"></i>Home</div>
     <div class="nav-btn" id="n2" onclick="tab('hist')"><i class="fas fa-history"></i>History</div>
-    <div class="nav-btn" onclick="location.reload()"><i class="fas fa-sign-out-alt"></i>Logout</div>
+    <div class="nav-btn" onclick="logOut()"><i class="fas fa-sign-out-alt"></i>Logout</div>
 </nav>
 
 <script type="module">
@@ -138,6 +141,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+window.logOut = async () => { try { await signOut(auth); location.reload(); } catch (e) { alert("Error: " + e.message); } };
 window.goToUserAuth = () => { document.getElementById("initialScreen").style.display = "none"; document.getElementById("authSection").style.display = "block"; };
 window.goToAdminAuth = () => { alert("Admin section restricted."); };
 window.goBack = () => { location.reload(); };
@@ -224,6 +228,33 @@ window.loadReport = async () => {
     }
 };
 
+// New: Fuel Report Logic
+window.loadFuelReport = async () => {
+    const h = document.getElementById("histData");
+    h.innerHTML = "🔄 Calculating Fuel Report...";
+    const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, "fuel"), orderBy("ts", "desc")));
+    let report = {};
+
+    snap.forEach(dDoc => {
+        let d = dDoc.data();
+        let date = d.date || "N/A";
+        if(!report[date]) report[date] = { litres: 0, money: 0 };
+        report[date].litres += parseFloat(d.litre) || 0;
+        report[date].money += parseFloat(d.total.replace('₹', '').trim()) || 0;
+    });
+
+    h.innerHTML = "<h3>⛽ Fuel Daily Summary</h3>";
+    for(let date in report) {
+        h.innerHTML += `
+            <div class="hist-card">
+                <div class="hist-title">📅 ${date}</div>
+                <div class="hist-row"><span>🧪 Total Litres:</span><b>${report[date].litres.toFixed(2)} L</b></div>
+                <div class="hist-total">Total Cost: ₹ ${report[date].money.toFixed(2)}</div>
+            </div>
+        `;
+    }
+};
+
 // App Logic
 const box = document.getElementById('expBox');
 for(let i=1; i<=10; i++) box.innerHTML += `<input id="e${i}" placeholder="📝 Info Item ${i}">`;
@@ -245,14 +276,54 @@ window.calcCust = () => {
 window.calcFuel = () => { let r = Number(document.getElementById("fRate").value); let l = Number(document.getElementById("fLitre").value); if(r && l) { document.getElementById("fuelRes").style.display="block"; document.getElementById("resFuel").innerText = "₹ " + (r*l).toFixed(2); } };
 
 window.saveCustomer = async () => { let btn = document.getElementById("btnCust"); let docId = document.getElementById("docId").value; btn.disabled = true; let data = { name: document.getElementById("name").value, village: document.getElementById("village").value, rate: document.getElementById("rate").value, start: document.getElementById("start").value, end: document.getElementById("end").value, minutes: document.getElementById("resMins").innerText, total: document.getElementById("resTotal").innerText, ts: new Date() }; try { if(docId) { await updateDoc(doc(db, "users", auth.currentUser.uid, "customers", docId), data); alert("Updated! ✅"); } else { await addDoc(collection(db, "users", auth.currentUser.uid, "customers"), data); alert("Saved! ✅"); } btn.style.display="none"; document.getElementById("nextCust").style.display="block"; } catch(e) { alert("Error: "+e.message); btn.disabled=false; } };
-window.saveFuel = async () => { let btn = document.getElementById("btnFuel"); let fDocId = document.getElementById("fDocId").value; btn.disabled = true; let data = { date: document.getElementById("fDate").value, rate: document.getElementById("fRate").value, litre: document.getElementById("fLitre").value, total: document.getElementById("resFuel").innerText, ts: new Date() }; try { if(fDocId) { await updateDoc(doc(db, "users", auth.currentUser.uid, "fuel", fDocId), data); alert("Fuel Updated! ✅"); } else { await addDoc(collection(db, "users", auth.currentUser.uid, "fuel"), data); alert("Fuel Saved! ✅"); } btn.style.display="none"; document.getElementById("nextFuel").style.display="block"; } catch(e) { alert("Error: "+e.message); btn.disabled=false; } };
+
+window.saveFuel = async () => { 
+    let btn = document.getElementById("btnFuel"); 
+    let fDocId = document.getElementById("fDocId").value; 
+    btn.disabled = true; 
+    let data = { date: document.getElementById("fDate").value, time: document.getElementById("fTime").value, rate: document.getElementById("fRate").value, litre: document.getElementById("fLitre").value, total: document.getElementById("resFuel").innerText, ts: new Date() }; 
+    try { 
+        if(fDocId) { await updateDoc(doc(db, "users", auth.currentUser.uid, "fuel", fDocId), data); alert("Fuel Updated! ✅"); } 
+        else { await addDoc(collection(db, "users", auth.currentUser.uid, "fuel"), data); alert("Fuel Saved! ✅"); } 
+        btn.style.display="none"; document.getElementById("nextFuel").style.display="block"; 
+    } catch(e) { alert("Error: "+e.message); btn.disabled=false; } 
+};
+
 window.saveExpense = async () => { let eDocId = document.getElementById("eDocId").value; let items = {}; for(let i=1; i<=10; i++) items[`i${i}`] = document.getElementById(`e${i}`).value; let data = { items: items, ts: new Date() }; try { if(eDocId) await updateDoc(doc(db, "users", auth.currentUser.uid, "expenses", eDocId), data); else await addDoc(collection(db, "users", auth.currentUser.uid, "expenses"), data); alert("Saved! ✅"); } catch(e) { alert("Error: "+e.message); } };
 
-window.reset = (type) => { if(type==='cust') { document.getElementById("docId").value = ""; ['name','village','rate','start','end'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnCust").style.display="block"; document.getElementById("btnCust").disabled=false; document.getElementById("nextCust").style.display="none"; document.getElementById("custRes").style.display="none"; } else if(type==='fuel') { document.getElementById("fDocId").value = ""; ['fRate','fLitre'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnFuel").style.display="block"; document.getElementById("btnFuel").disabled=false; document.getElementById("nextFuel").style.display="none"; document.getElementById("fuelRes").style.display="none"; } };
+window.reset = (type) => { if(type==='cust') { document.getElementById("docId").value = ""; ['name','village','rate','start','end'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnCust").style.display="block"; document.getElementById("btnCust").disabled=false; document.getElementById("nextCust").style.display="none"; document.getElementById("custRes").style.display="none"; } else if(type==='fuel') { document.getElementById("fDocId").value = ""; ['fRate','fLitre','fTime'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnFuel").style.display="block"; document.getElementById("btnFuel").disabled=false; document.getElementById("nextFuel").style.display="none"; document.getElementById("fuelRes").style.display="none"; } };
 
-window.loadHist = async (col) => { const h = document.getElementById("histData"); h.innerHTML = "🔄 Loading..."; const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, col), orderBy("ts", "desc"))); h.innerHTML = ""; snap.forEach(dDoc => { let d = dDoc.data(); let content = `<div class="hist-card">`; if(col === 'customers') { content += `<div class="hist-title">👤 ${d.name}</div><div class="hist-row"><span>🏡 Village:</span><b>${d.village}</b></div><div class="hist-row"><span>🕒 Time:</span>${d.start}-${d.end}</div><div class="hist-row"><span>⏳ Minutes:</span><b>${d.minutes}</b></div><div class="hist-total">Total: ${d.total}</div>`; } else if(col === 'fuel') { content += `<div class="hist-title">⛽ Fuel Entry</div><div class="hist-row"><span>📅 Date:</span>${d.date}</div><div class="hist-row"><span>🧪 Litre/Rate:</span>${d.litre}/${d.rate}</div><div class="hist-total">Total: ${d.total}</div>`; } else if(col === 'expenses') { content += `<div class="hist-title">💸 Info Entry</div>`; for(let i=1; i<=10; i++) if(d.items && d.items[`i${i}`]) content += `<div class="hist-row">${d.items[`i${i}`]}</div>`; } content += `<button class="edit-btn" onclick="editData('${col}','${dDoc.id}')">✏️ Edit</button></div>`; h.innerHTML += content; }); };
+window.loadHist = async (col) => { 
+    const h = document.getElementById("histData"); 
+    h.innerHTML = "🔄 Loading..."; 
+    const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, col), orderBy("ts", "desc"))); 
+    h.innerHTML = ""; 
+    snap.forEach(dDoc => { 
+        let d = dDoc.data(); 
+        let dateStr = d.ts ? d.ts.toDate().toLocaleDateString('en-GB') : "N/A";
+        let content = `<div class="hist-card">`; 
+        if(col === 'customers') { 
+            content += `<div class="hist-title">👤 ${d.name}</div>
+                        <div class="hist-row"><span>📅 Date:</span><b>${dateStr}</b></div>
+                        <div class="hist-row"><span>🏡 Village:</span><b>${d.village}</b></div>
+                        <div class="hist-row"><span>🕒 Time:</span>${d.start}-${d.end}</div>
+                        <div class="hist-row"><span>⏳ Minutes:</span><b>${d.minutes}</b></div>
+                        <div class="hist-total">Total: ${d.total}</div>`; 
+        } else if(col === 'fuel') { 
+            content += `<div class="hist-title">⛽ Fuel Entry</div>
+                        <div class="hist-row"><span>📅 Date/Time:</span>${d.date} ${d.time || ''}</div>
+                        <div class="hist-row"><span>🧪 Litre/Rate:</span>${d.litre}/${d.rate}</div>
+                        <div class="hist-total">Total: ${d.total}</div>`; 
+        } else if(col === 'expenses') { 
+            content += `<div class="hist-title">💸 Info Entry</div>`; 
+            for(let i=1; i<=10; i++) if(d.items && d.items[`i${i}`]) content += `<div class="hist-row">${d.items[`i${i}`]}</div>`; 
+        } 
+        content += `<button class="edit-btn" onclick="editData('${col}','${dDoc.id}')">✏️ Edit</button></div>`; 
+        h.innerHTML += content; 
+    }); 
+};
 
-window.editData = async (col, id) => { const s = await getDoc(doc(db, "users", auth.currentUser.uid, col, id)); const d = s.data(); tab('dash'); if(col === 'customers') { show('customer'); document.getElementById("docId").value = id; document.getElementById("name").value = d.name; document.getElementById("village").value = d.village; document.getElementById("rate").value = d.rate; document.getElementById("start").value = d.start; document.getElementById("end").value = d.end; calcCust(); } else if(col === 'fuel') { show('fuel'); document.getElementById("fDocId").value = id; document.getElementById("fDate").value = d.date; document.getElementById("fRate").value = d.rate; document.getElementById("fLitre").value = d.litre; calcFuel(); } else if(col === 'expenses') { show('expense'); document.getElementById("eDocId").value = id; for(let i=1; i<=10; i++) document.getElementById(`e${i}`).value = d.items[`i${i}`] || ""; } };
+window.editData = async (col, id) => { const s = await getDoc(doc(db, "users", auth.currentUser.uid, col, id)); const d = s.data(); tab('dash'); if(col === 'customers') { show('customer'); document.getElementById("docId").value = id; document.getElementById("name").value = d.name; document.getElementById("village").value = d.village; document.getElementById("rate").value = d.rate; document.getElementById("start").value = d.start; document.getElementById("end").value = d.end; calcCust(); } else if(col === 'fuel') { show('fuel'); document.getElementById("fDocId").value = id; document.getElementById("fDate").value = d.date; document.getElementById("fTime").value = d.time || ""; document.getElementById("fRate").value = d.rate; document.getElementById("fLitre").value = d.litre; calcFuel(); } else if(col === 'expenses') { show('expense'); document.getElementById("eDocId").value = id; for(let i=1; i<=10; i++) document.getElementById(`e${i}`).value = d.items[`i${i}`] || ""; } };
 </script>
 </body>
 </html>
