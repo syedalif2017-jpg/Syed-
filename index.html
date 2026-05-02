@@ -3,39 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <title>Syed Business Pro - Central</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#007bff">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 15px; padding-bottom: 90px; }
+        /* Force no zooming on inputs */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 15px; padding-bottom: 90px; touch-action: manipulation; }
         #initialScreen { display: block; text-align: center; }
         .header-text { color: #007bff; margin-bottom: 5px; font-size: 24px; }
         .subtitle { color: #666; margin-bottom: 30px; font-size: 16px; }
         .card { background: white; width: 100%; max-width: 350px; margin: 0 auto 20px auto; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; text-align: center; }
         .card:hover { transform: translateY(-5px); }
         .icon { width: 50px; height: 50px; fill: #007bff; margin-bottom: 10px; }
-        input,button{width:100%; padding:12px; margin:8px 0; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size: 15px;}
-        button{background:#007bff; color:white; border:none; font-weight:bold; cursor:pointer;}
-        button:disabled{background:#ccc; cursor: not-allowed;}
-        .back-btn{background:#6c757d; margin-top: 5px;} 
-        .section{background:white; border:1px solid #ddd; padding:18px; margin-top:15px; border-radius:12px; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.05);}
-        .active-sec{display:block;}
+        
+        /* Font size set to 16px to prevent iOS/Android auto-zoom */
+        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; }
+        
+        button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .back-btn { background: #6c757d; margin-top: 5px; } 
+        .section { background: white; border: 1px solid #ddd; padding: 18px; margin-top: 15px; border-radius: 12px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .active-sec { display: block; }
         .user-header { background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 20px; margin: -15px -15px 20px -15px; display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 20px 20px; }
-        .summary-box { background:#f8fbff; border:1px solid #b3d7ff; padding:15px; border-radius:10px; margin-top:12px; display:none; }
-        .summary-line { display:flex; justify-content:space-between; border-bottom:1px solid #e1efff; padding:8px 0; font-size:14px; }
-        .total-text { font-weight:bold; color:#28a745; font-size:18px; border:none; }
+        .summary-box { background: #f8fbff; border: 1px solid #b3d7ff; padding: 15px; border-radius: 10px; margin-top: 12px; display: none; }
+        .summary-line { display: flex; justify-content: space-between; border-bottom: 1px solid #e1efff; padding: 8px 0; font-size: 14px; }
+        .total-text { font-weight: bold; color: #28a745; font-size: 18px; border: none; }
         .hist-card { background: white; border-left: 6px solid #007bff; padding: 15px; margin-bottom: 12px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .hist-title { font-size: 16px; font-weight: bold; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 8px; }
         .hist-row { display: flex; justify-content: space-between; font-size: 13px; color: #555; margin: 4px 0; }
         .hist-total { font-size: 16px; font-weight: bold; color: #28a745; margin-top: 8px; text-align: right; border-top: 1px dashed #ddd; padding-top: 5px; }
-        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top:5px; }
+        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 5px; }
         .menu-item { background: white; padding: 15px 5px; text-align: center; border-radius: 12px; border: 1px solid #eee; cursor: pointer; }
-        .bottom-nav { position:fixed; bottom:0; left:0; width:100%; background:white; display:flex; border-top:1px solid #eee; height:70px; z-index:1000; }
-        .nav-btn { flex:1; text-align:center; padding:10px 0; color:#888; font-size:11px; cursor:pointer; }
-        .nav-btn.active { color:#007bff; font-weight: bold; }
-        .edit-btn { background:#ffc107; color:#212529; padding:5px 12px; width:auto; font-size:12px; margin-top:10px; border-radius:6px; display:inline-block; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; height: 70px; z-index: 1000; }
+        .nav-btn { flex: 1; text-align: center; padding: 10px 0; color: #888; font-size: 11px; cursor: pointer; }
+        .nav-btn.active { color: #007bff; font-weight: bold; }
+        .edit-btn { background: #ffc107; color: #212529; padding: 5px 12px; width: auto; font-size: 12px; margin-top: 10px; border-radius: 6px; display: inline-block; }
     </style>
 </head>
 <body>
