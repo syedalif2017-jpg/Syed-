@@ -7,16 +7,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        /* --- STYLES --- */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 15px; padding-bottom: 80px; }
-        
         #initialScreen { display: block; text-align: center; }
         .header-text { color: #007bff; margin-bottom: 5px; font-size: 24px; }
         .subtitle { color: #666; margin-bottom: 30px; font-size: 16px; }
         .card { background: white; width: 100%; max-width: 350px; margin: 0 auto 20px auto; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; text-align: center; }
         .card:hover { transform: translateY(-5px); }
         .icon { width: 50px; height: 50px; fill: #007bff; margin-bottom: 10px; }
-        
         input,button{width:100%; padding:12px; margin:8px 0; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size: 15px;}
         button{background:#007bff; color:white; border:none; font-weight:bold; cursor:pointer;}
         button:disabled{background:#ccc; cursor: not-allowed;}
@@ -107,7 +104,10 @@
     <div id="expense" class="section">
         <h3>💸 Others / Information</h3>
         <input id="eDocId" type="hidden">
+        <label>📅 Date</label>
+        <input type="date" id="eDate">
         <div id="expBox"></div>
+        <div style="text-align:right; font-weight:bold; color:#28a745; margin:10px;">Total: ₹ <span id="eTotal">0</span></div>
         <button id="btnExp" onclick="saveExpense()">✅ Save All Info</button>
         <button id="nextExp" onclick="reset('exp')" style="background:#28a745; display:none;">➕ Add New Info</button>
     </div>
@@ -115,12 +115,13 @@
 
 <div id="history" style="display:none; padding:10px;">
     <h3>📋 Recent Records</h3>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:15px;">
+    <div id="hist-controls" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:15px;">
         <button onclick="loadHist('customers')" style="font-size:11px; padding:8px; background:#007bff;">👤 Cust</button>
         <button onclick="loadHist('fuel')" style="font-size:11px; padding:8px; background:#007bff;">⛽ Fuel</button>
         <button onclick="loadHist('expenses')" style="font-size:11px; padding:8px; background:#007bff;">💸 Info</button>
         <button onclick="loadReport()" style="font-size:11px; padding:8px; background:#28a745;">📊 Cust Rep</button>
         <button onclick="loadFuelReport()" style="font-size:11px; padding:8px; background:#fd7e14;">⛽ Fuel Rep</button>
+        <button onclick="loadExpReport()" style="font-size:11px; padding:8px; background:#6f42c1;">💸 Exp Rep</button>
     </div>
     <div id="histData"></div>
 </div>
@@ -141,12 +142,35 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+window.formatAMPM = (timeStr) => {
+    if (!timeStr) return "";
+    let [hours, minutes] = timeStr.split(':');
+    let ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${ampm}`;
+};
+
+window.calcTotal = () => {
+    let t = 0;
+    for(let i=1; i<=10; i++) {
+        t += parseFloat(document.getElementById(`a${i}`).value) || 0;
+    }
+    document.getElementById("eTotal").innerText = t.toFixed(2);
+};
+
+window.printReport = (dateId) => {
+    let content = document.getElementById(dateId).innerHTML;
+    let win = window.open('', '', 'height=600, width=500');
+    win.document.write('<html><head><title>Report</title><style>body{font-family:Arial; padding:20px;}.hist-card{border:1px solid #ccc; padding:15px; border-radius:10px;}.hist-title{font-weight:bold; font-size:18px; border-bottom:1px solid #ddd; padding-bottom:10px; margin-bottom:10px;}.hist-row{display:flex; justify-content:space-between; margin:5px 0; font-size:14px;}.hist-total{font-weight:bold; font-size:16px; margin-top:10px; border-top:1px solid #ddd; padding-top:10px; text-align:right;}</style></head><body>' + content + '</body></html>');
+    win.document.close();
+    win.print();
+};
+
 window.logOut = async () => { try { await signOut(auth); location.reload(); } catch (e) { alert("Error: " + e.message); } };
 window.goToUserAuth = () => { document.getElementById("initialScreen").style.display = "none"; document.getElementById("authSection").style.display = "block"; };
 window.goToAdminAuth = () => { alert("Admin section restricted."); };
 window.goBack = () => { location.reload(); };
 
-// Auth Logic
 let isLoginMode = true;
 window.toggleAuth = () => { isLoginMode = !isLoginMode; document.getElementById("authTitle").innerText = isLoginMode ? "🔐 Login" : "📝 Register"; document.getElementById("authBtn").innerText = isLoginMode ? "Login" : "Register Now"; document.getElementById("regFields").style.display = isLoginMode ? "none" : "block"; };
 
@@ -172,7 +196,6 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Profile Management
 window.editProfileName = async () => {
     const currentName = document.getElementById("displayUserName").innerText;
     const newName = prompt("अपना नया नाम डालें:", currentName);
@@ -199,66 +222,113 @@ window.changeUserPassword = async () => {
     }
 };
 
-// Daily Report Logic
+window.dailyData = {}; 
 window.loadReport = async () => {
     const h = document.getElementById("histData");
-    h.innerHTML = "🔄 Calculating Report...";
+    h.innerHTML = "🔄 Loading...";
     const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, "customers"), orderBy("ts", "desc")));
-    let report = {};
-
+    window.dailyData = {}; 
     snap.forEach(dDoc => {
         let d = dDoc.data();
-        let date = d.ts.toDate().toLocaleDateString('en-GB'); 
-        if(!report[date]) report[date] = { cust: 0, mins: 0, money: 0 };
-        report[date].cust += 1;
-        report[date].mins += parseInt(d.minutes) || 0;
-        report[date].money += parseFloat(d.total.replace('₹', '').trim()) || 0;
+        let date = d.ts ? d.ts.toDate().toLocaleDateString('en-GB') : "N/A";
+        let mins = parseInt(d.minutes) || 0;
+        let rate = d.rate || "0";
+        if(!window.dailyData[date]) window.dailyData[date] = { cust: 0, totalMins: 0, money: 0, rates: {} };
+        window.dailyData[date].cust += 1;
+        window.dailyData[date].totalMins += mins;
+        window.dailyData[date].money += parseFloat(d.total.replace('₹', '').trim()) || 0;
+        if(!window.dailyData[date].rates[rate]) window.dailyData[date].rates[rate] = 0;
+        window.dailyData[date].rates[rate] += mins;
     });
-
-    h.innerHTML = "<h3>📊 Daily Summary</h3>";
-    for(let date in report) {
-        h.innerHTML += `
-            <div class="hist-card">
-                <div class="hist-title">📅 ${date}</div>
-                <div class="hist-row"><span>👥 Customers:</span><b>${report[date].cust}</b></div>
-                <div class="hist-row"><span>⏳ Minutes:</span><b>${report[date].mins}</b></div>
-                <div class="hist-total">Total: ₹ ${report[date].money.toFixed(2)}</div>
-            </div>
-        `;
+    h.innerHTML = "<h3>📅 Select Date</h3>";
+    if(Object.keys(window.dailyData).length === 0) h.innerHTML += "<p>कोई डेटा नहीं मिला।</p>";
+    for(let date in window.dailyData) {
+        h.innerHTML += `<button onclick="showDateDetails('${date}')" style="background:#007bff; margin-bottom:5px;">📅 ${date}</button>`;
     }
 };
 
-// New: Fuel Report Logic
+window.showDateDetails = (date) => {
+    let d = window.dailyData[date];
+    let dateId = "rep-" + date.replace(/\//g, '-');
+    let rateDetails = Object.keys(d.rates).map(r => `₹${r} (${d.rates[r]} min)`).join(', ');
+    let h = document.getElementById("histData");
+    h.innerHTML = `<button onclick="loadReport()" style="background:#6c757d; margin-bottom:10px;">⬅ Back</button>
+                   <div class="hist-card" id="${dateId}">
+                    <div class="hist-title">📅 Report: ${date}</div>
+                    <div class="hist-row"><span>💰 Rates:</span><br><b>${rateDetails}</b></div>
+                    <div class="hist-row"><span>👥 Customers:</span><b>${d.cust}</b></div>
+                    <div class="hist-row"><span>⏳ Total Mins:</span><b>${d.totalMins}</b></div>
+                    <div class="hist-total">Total: ₹ ${d.money.toFixed(2)}</div>
+                    <button onclick="printReport('${dateId}')" style="background:#28a745; margin-top:10px; width:100%;">🖨️ Share / Print</button>
+                   </div>`;
+};
+
 window.loadFuelReport = async () => {
     const h = document.getElementById("histData");
     h.innerHTML = "🔄 Calculating Fuel Report...";
     const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, "fuel"), orderBy("ts", "desc")));
     let report = {};
-
     snap.forEach(dDoc => {
         let d = dDoc.data();
         let date = d.date || "N/A";
-        if(!report[date]) report[date] = { litres: 0, money: 0 };
+        if(!report[date]) report[date] = { litres: 0, money: 0, id: 'fuel-' + date.replace(/\//g, '-') };
         report[date].litres += parseFloat(d.litre) || 0;
         report[date].money += parseFloat(d.total.replace('₹', '').trim()) || 0;
     });
-
     h.innerHTML = "<h3>⛽ Fuel Daily Summary</h3>";
+    if(Object.keys(report).length === 0) h.innerHTML += "<p>कोई डेटा नहीं मिला।</p>";
     for(let date in report) {
+        let r = report[date];
         h.innerHTML += `
-            <div class="hist-card">
+            <div class="hist-card" id="${r.id}">
                 <div class="hist-title">📅 ${date}</div>
-                <div class="hist-row"><span>🧪 Total Litres:</span><b>${report[date].litres.toFixed(2)} L</b></div>
-                <div class="hist-total">Total Cost: ₹ ${report[date].money.toFixed(2)}</div>
+                <div class="hist-row"><span>🧪 Total Litres:</span><b>${r.litres.toFixed(2)} L</b></div>
+                <div class="hist-total">Total Cost: ₹ ${r.money.toFixed(2)}</div>
+                <button onclick="printReport('${r.id}')" style="background:#28a745; margin-top:10px; width:100%; border:none; padding:10px; color:white; border-radius:5px;">🖨️ Share / Print</button>
             </div>
         `;
     }
 };
 
-// App Logic
-const box = document.getElementById('expBox');
-for(let i=1; i<=10; i++) box.innerHTML += `<input id="e${i}" placeholder="📝 Info Item ${i}">`;
-document.getElementById('fDate').valueAsDate = new Date();
+window.loadExpReport = async () => {
+    const h = document.getElementById("histData");
+    h.innerHTML = "🔄 Loading Expenses...";
+    const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, "expenses"), orderBy("ts", "desc")));
+    window.expenseDailyData = {};
+    snap.forEach(dDoc => {
+        let d = dDoc.data();
+        let date = d.date || "N/A";
+        if(!window.expenseDailyData[date]) window.expenseDailyData[date] = [];
+        window.expenseDailyData[date].push(d);
+    });
+    h.innerHTML = "<h3>💸 Expenses Summary</h3>";
+    if(Object.keys(window.expenseDailyData).length === 0) h.innerHTML += "<p>कोई डेटा नहीं मिला।</p>";
+    for(let date in window.expenseDailyData) {
+        let dailyTotal = 0;
+        window.expenseDailyData[date].forEach(item => { dailyTotal += parseFloat(item.total.replace('₹', '').trim()) || 0; });
+        h.innerHTML += `<button onclick="showExpDateDetails('${date}')" style="background:#6f42c1; margin-bottom:5px; text-align:left; display:flex; justify-content:space-between; width:100%; padding:15px; color:white; border:none; border-radius:8px;">
+            <span>📅 ${date}</span> <b>₹ ${dailyTotal.toFixed(2)}</b>
+        </button>`;
+    }
+};
+
+window.showExpDateDetails = (date) => {
+    let items = window.expenseDailyData[date];
+    let dateId = "exp-rep-" + date.replace(/\//g, '-');
+    let h = document.getElementById("histData");
+    let html = `<button onclick="loadExpReport()" style="background:#6c757d; margin-bottom:10px;">⬅ Back</button>`;
+    html += `<div class="hist-card" id="${dateId}"><div class="hist-title">💸 Report: ${date}</div>`;
+    let dayTotal = 0;
+    items.forEach(d => {
+        dayTotal += parseFloat(d.total.replace('₹', '').trim()) || 0;
+        for(let i=1; i<=10; i++) {
+            if(d.items && d.items[`d${i}`]) html += `<div class="hist-row"><span>${d.items[`d${i}`]}</span><b>₹${d.items[`a${i}`]}</b></div>`;
+        }
+    });
+    html += `<div class="hist-total">Total: ₹${dayTotal.toFixed(2)}</div>`;
+    html += `<button onclick="printReport('${dateId}')" style="background:#28a745; margin-top:10px; width:100%; color:white; border:none; padding:10px; border-radius:5px;">🖨️ Share / Print</button></div>`;
+    h.innerHTML = html;
+};
 
 window.show = (id) => { ['customer','fuel','expense'].forEach(s => document.getElementById(s).classList.remove('active-sec')); document.getElementById(id).classList.add('active-sec'); };
 window.tab = (t) => { document.getElementById("dashboard").style.display = t==='dash'?'block':'none'; document.getElementById("history").style.display = t==='hist'?'block':'none'; document.getElementById("n1").classList.toggle('active', t==='dash'); document.getElementById("n2").classList.toggle('active', t==='hist'); if(t==='hist') loadHist('customers'); };
@@ -289,9 +359,34 @@ window.saveFuel = async () => {
     } catch(e) { alert("Error: "+e.message); btn.disabled=false; } 
 };
 
-window.saveExpense = async () => { let eDocId = document.getElementById("eDocId").value; let items = {}; for(let i=1; i<=10; i++) items[`i${i}`] = document.getElementById(`e${i}`).value; let data = { items: items, ts: new Date() }; try { if(eDocId) await updateDoc(doc(db, "users", auth.currentUser.uid, "expenses", eDocId), data); else await addDoc(collection(db, "users", auth.currentUser.uid, "expenses"), data); alert("Saved! ✅"); } catch(e) { alert("Error: "+e.message); } };
+window.saveExpense = async () => { 
+    let btn = document.getElementById("btnExp"); 
+    btn.disabled = true;
+    let eDocId = document.getElementById("eDocId").value; 
+    let items = {}; 
+    for(let i=1; i<=10; i++) { 
+        items[`d${i}`] = document.getElementById(`d${i}`).value; 
+        items[`a${i}`] = document.getElementById(`a${i}`).value; 
+    } 
+    let data = { date: document.getElementById("eDate").value, total: document.getElementById("eTotal").innerText, items: items, ts: new Date() }; 
+    try { 
+        if(eDocId) await updateDoc(doc(db, "users", auth.currentUser.uid, "expenses", eDocId), data); 
+        else await addDoc(collection(db, "users", auth.currentUser.uid, "expenses"), data); 
+        alert("Saved! ✅");
+        btn.style.display="none";
+        document.getElementById("nextExp").style.display="block";
+    } catch(e) { alert("Error: "+e.message); btn.disabled=false; } 
+};
 
-window.reset = (type) => { if(type==='cust') { document.getElementById("docId").value = ""; ['name','village','rate','start','end'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnCust").style.display="block"; document.getElementById("btnCust").disabled=false; document.getElementById("nextCust").style.display="none"; document.getElementById("custRes").style.display="none"; } else if(type==='fuel') { document.getElementById("fDocId").value = ""; ['fRate','fLitre','fTime'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnFuel").style.display="block"; document.getElementById("btnFuel").disabled=false; document.getElementById("nextFuel").style.display="none"; document.getElementById("fuelRes").style.display="none"; } };
+window.reset = (type) => { 
+    if(type==='cust') { 
+        document.getElementById("docId").value = ""; ['name','village','rate','start','end'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnCust").style.display="block"; document.getElementById("btnCust").disabled=false; document.getElementById("nextCust").style.display="none"; document.getElementById("custRes").style.display="none"; 
+    } else if(type==='fuel') { 
+        document.getElementById("fDocId").value = ""; ['fRate','fLitre','fTime'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnFuel").style.display="block"; document.getElementById("btnFuel").disabled=false; document.getElementById("nextFuel").style.display="none"; document.getElementById("fuelRes").style.display="none"; 
+    } else if(type==='exp') {
+        document.getElementById("eDocId").value = ""; document.getElementById("eDate").value = ""; for(let i=1; i<=10; i++) { document.getElementById(`d${i}`).value=""; document.getElementById(`a${i}`).value=""; } document.getElementById("eTotal").innerText = "0"; document.getElementById("btnExp").style.display="block"; document.getElementById("btnExp").disabled=false; document.getElementById("nextExp").style.display="none";
+    }
+};
 
 window.loadHist = async (col) => { 
     const h = document.getElementById("histData"); 
@@ -303,27 +398,45 @@ window.loadHist = async (col) => {
         let dateStr = d.ts ? d.ts.toDate().toLocaleDateString('en-GB') : "N/A";
         let content = `<div class="hist-card">`; 
         if(col === 'customers') { 
-            content += `<div class="hist-title">👤 ${d.name}</div>
-                        <div class="hist-row"><span>📅 Date:</span><b>${dateStr}</b></div>
-                        <div class="hist-row"><span>🏡 Village:</span><b>${d.village}</b></div>
-                        <div class="hist-row"><span>🕒 Time:</span>${d.start}-${d.end}</div>
-                        <div class="hist-row"><span>⏳ Minutes:</span><b>${d.minutes}</b></div>
-                        <div class="hist-total">Total: ${d.total}</div>`; 
+            content += `<div class="hist-title">👤 ${d.name}</div><div class="hist-row"><span>📅 Date:</span><b>${dateStr}</b></div><div class="hist-row"><span>🏡 Village:</span><b>${d.village}</b></div><div class="hist-row"><span>💰 Rate:</span><b>₹ ${d.rate}/hr</b></div><div class="hist-row"><span>🕒 Time:</span>${formatAMPM(d.start)}-${formatAMPM(d.end)}</div><div class="hist-row"><span>⏳ Minutes:</span><b>${d.minutes}</b></div><div class="hist-total">Total: ${d.total}</div>`; 
         } else if(col === 'fuel') { 
-            content += `<div class="hist-title">⛽ Fuel Entry</div>
-                        <div class="hist-row"><span>📅 Date/Time:</span>${d.date} ${d.time || ''}</div>
-                        <div class="hist-row"><span>🧪 Litre/Rate:</span>${d.litre}/${d.rate}</div>
-                        <div class="hist-total">Total: ${d.total}</div>`; 
+            content += `<div class="hist-title">⛽ Fuel Entry</div><div class="hist-row"><span>📅 Date/Time:</span>${d.date} ${formatAMPM(d.time || '')}</div><div class="hist-row"><span>🧪 Litre/Rate:</span>${d.litre}/${d.rate}</div><div class="hist-total">Total: ${d.total}</div>`; 
         } else if(col === 'expenses') { 
-            content += `<div class="hist-title">💸 Info Entry</div>`; 
-            for(let i=1; i<=10; i++) if(d.items && d.items[`i${i}`]) content += `<div class="hist-row">${d.items[`i${i}`]}</div>`; 
+            content += `<div class="hist-title">💸 Info: ${d.date || 'N/A'}</div>`; 
+            for(let i=1; i<=10; i++) if(d.items && d.items[`d${i}`]) content += `<div class="hist-row"><span>${d.items[`d${i}`]}</span><b>₹${d.items[`a${i}`]}</b></div>`;
+            content += `<div class="hist-total">Total: ₹${d.total}</div>`;
         } 
         content += `<button class="edit-btn" onclick="editData('${col}','${dDoc.id}')">✏️ Edit</button></div>`; 
         h.innerHTML += content; 
     }); 
 };
 
-window.editData = async (col, id) => { const s = await getDoc(doc(db, "users", auth.currentUser.uid, col, id)); const d = s.data(); tab('dash'); if(col === 'customers') { show('customer'); document.getElementById("docId").value = id; document.getElementById("name").value = d.name; document.getElementById("village").value = d.village; document.getElementById("rate").value = d.rate; document.getElementById("start").value = d.start; document.getElementById("end").value = d.end; calcCust(); } else if(col === 'fuel') { show('fuel'); document.getElementById("fDocId").value = id; document.getElementById("fDate").value = d.date; document.getElementById("fTime").value = d.time || ""; document.getElementById("fRate").value = d.rate; document.getElementById("fLitre").value = d.litre; calcFuel(); } else if(col === 'expenses') { show('expense'); document.getElementById("eDocId").value = id; for(let i=1; i<=10; i++) document.getElementById(`e${i}`).value = d.items[`i${i}`] || ""; } };
+window.editData = async (col, id) => { 
+    const s = await getDoc(doc(db, "users", auth.currentUser.uid, col, id)); 
+    const d = s.data(); 
+    tab('dash'); 
+    if(col === 'customers') { 
+        show('customer'); document.getElementById("docId").value = id; document.getElementById("name").value = d.name; document.getElementById("village").value = d.village; document.getElementById("rate").value = d.rate; document.getElementById("start").value = d.start; document.getElementById("end").value = d.end; calcCust(); 
+    } else if(col === 'fuel') { 
+        show('fuel'); document.getElementById("fDocId").value = id; document.getElementById("fDate").value = d.date; document.getElementById("fTime").value = d.time || ""; document.getElementById("fRate").value = d.rate; document.getElementById("fLitre").value = d.litre; calcFuel(); 
+    } else if(col === 'expenses') { 
+        show('expense'); document.getElementById("eDocId").value = id; document.getElementById("eDate").value = d.date;
+        for(let i=1; i<=10; i++) { 
+            document.getElementById(`d${i}`).value = d.items[`d${i}`] || ""; 
+            document.getElementById(`a${i}`).value = d.items[`a${i}`] || ""; 
+        }
+        calcTotal();
+    } 
+};
+
+const box = document.getElementById('expBox');
+for(let i=1; i<=10; i++) { 
+    box.innerHTML += `<div style="display:grid; grid-template-columns: 2fr 1fr; gap:5px; margin-bottom:5px;">
+        <input id="d${i}" placeholder="📝 Reason ${i}">
+        <input id="a${i}" type="number" placeholder="₹ Amt" oninput="calcTotal()">
+    </div>`; 
+}
+document.getElementById('fDate').valueAsDate = new Date();
 </script>
 </body>
 </html>
