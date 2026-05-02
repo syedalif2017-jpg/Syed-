@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        /* Force no zooming on inputs */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 15px; padding-bottom: 90px; touch-action: manipulation; }
         #initialScreen { display: block; text-align: center; }
         .header-text { color: #007bff; margin-bottom: 5px; font-size: 24px; }
@@ -18,7 +17,7 @@
         .card:hover { transform: translateY(-5px); }
         .icon { width: 50px; height: 50px; fill: #007bff; margin-bottom: 10px; }
         
-        /* Font size set to 16px to prevent iOS/Android auto-zoom */
+        /* Fixed Input Font Size (16px to prevent zoom) */
         input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; }
         
         button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
@@ -141,8 +140,14 @@
     <div id="histData"></div>
 </div>
 
+<div id="analytics" style="display:none; padding:10px;">
+    <h3>📈 Business Analytics</h3>
+    <div id="analyticsContent" style="margin-top:20px;">🔄 Calculating...</div>
+</div>
+
 <nav class="bottom-nav" id="nav" style="display:none">
     <div class="nav-btn" id="n1" onclick="tab('dash')"><i class="fas fa-home"></i><br>Home</div>
+    <div class="nav-btn" id="n4" onclick="tab('analytics')"><i class="fas fa-chart-line"></i><br>Analytics</div>
     <div class="nav-btn" id="n3" onclick="tab('report')"><i class="fas fa-chart-pie"></i><br>Report</div>
     <div class="nav-btn" id="n2" onclick="tab('hist')"><i class="fas fa-history"></i><br>History</div>
     <div class="nav-btn" onclick="logOut()"><i class="fas fa-sign-out-alt"></i><br>Logout</div>
@@ -195,6 +200,43 @@ onAuthStateChanged(auth, async (user) => {
         tab('dash');
     }
 });
+
+// Analytics Calculation (Income - Fuel - Expenses = Net)
+window.calculateAnalytics = async () => {
+    const h = document.getElementById("analyticsContent");
+    h.innerHTML = "🔄 Calculating...";
+    let totalIncome = 0;
+    let totalFuel = 0;
+    let totalExpenses = 0;
+
+    try {
+        const collections = ['customers', 'fuel', 'expenses'];
+        for(let col of collections) {
+            const snap = await getDocs(collection(db, "users", auth.currentUser.uid, col));
+            snap.forEach(dDoc => {
+                let d = dDoc.data();
+                if(d.total) {
+                    let val = parseFloat(d.total.replace('₹', '').replace(',', '').trim()) || 0;
+                    if(col === 'customers') totalIncome += val;
+                    if(col === 'fuel') totalFuel += val;
+                    if(col === 'expenses') totalExpenses += val;
+                }
+            });
+        }
+        let netBalance = totalIncome - totalFuel - totalExpenses;
+        let color = netBalance >= 0 ? '#28a745' : '#dc3545';
+        h.innerHTML = `
+            <div class="hist-card">
+                <div class="hist-title">Business Summary</div>
+                <div class="hist-row"><span>Total Income:</span> <b style="color:#28a745;">+ ₹${totalIncome.toFixed(2)}</b></div>
+                <div class="hist-row"><span>Total Fuel:</span> <b style="color:#dc3545;">- ₹${totalFuel.toFixed(2)}</b></div>
+                <div class="hist-row"><span>Total Expenses:</span> <b style="color:#dc3545;">- ₹${totalExpenses.toFixed(2)}</b></div>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+                <div class="hist-row" style="font-size:18px;"><span><b>Net Balance:</b></span> <b style="color:${color};">₹ ${netBalance.toFixed(2)}</b></div>
+            </div>
+        `;
+    } catch(e) { h.innerHTML = "❌ Data loading error."; }
+};
 
 window.loadReportMenu = async (type) => {
     const h = document.getElementById("reportData");
@@ -252,10 +294,15 @@ window.tab = (t) => {
     document.getElementById("dashboard").style.display = (t==='dash'?'block':'none');
     document.getElementById("report").style.display = (t==='report'?'block':'none');
     document.getElementById("history").style.display = (t==='hist'?'block':'none');
+    document.getElementById("analytics").style.display = (t==='analytics'?'block':'none');
+    
     document.getElementById("n1").classList.toggle('active', t==='dash');
     document.getElementById("n3").classList.toggle('active', t==='report');
     document.getElementById("n2").classList.toggle('active', t==='hist');
+    document.getElementById("n4").classList.toggle('active', t==='analytics');
+    
     if(t==='hist') loadHist('customers');
+    if(t==='analytics') calculateAnalytics();
 };
 
 window.calcCust = () => { let r=Number(document.getElementById("rate").value); let s=document.getElementById("start").value; let e=document.getElementById("end").value; if(r&&s&&e) { let diff=(new Date("1970-01-01T"+e)-new Date("1970-01-01T"+s))/60000; if(diff<0) diff+=1440; document.getElementById("custRes").style.display="block"; document.getElementById("resMins").innerText=diff+" Mins"; document.getElementById("resTotal").innerText="₹ "+((r/60)*diff).toFixed(2); } };
