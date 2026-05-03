@@ -17,9 +17,7 @@
         .card:hover { transform: translateY(-5px); }
         .icon { width: 50px; height: 50px; fill: #007bff; margin-bottom: 10px; }
         
-        /* Fixed Input Font Size (16px to prevent zoom) */
         input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; }
-        
         button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
         button:disabled { background: #ccc; cursor: not-allowed; }
         .back-btn { background: #6c757d; margin-top: 5px; } 
@@ -79,8 +77,20 @@
         <div class="menu-item" onclick="show('fuel')"><i class="fas fa-gas-pump"></i><br>Fuel</div>
         <div class="menu-item" onclick="show('expense')"><i class="fas fa-file-invoice-dollar"></i><br>Others</div>
     </div>
+    
     <div id="customer" class="section active-sec">
         <h3>👥 Customer Entry</h3>
+        
+        <div id="timerControls" style="text-align:center; background:#f8f9fa; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #ddd;">
+            <div id="liveTimer" style="font-size:32px; font-weight:bold; color:#007bff; margin-bottom:10px;">00:00:00</div>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button id="btnStart" onclick="startTimer()" style="width:auto; padding:8px 15px; background:#28a745;">Start</button>
+                <button id="btnPause" onclick="pauseTimer()" style="width:auto; padding:8px 15px; background:#ffc107; display:none;">Pause</button>
+                <button id="btnResume" onclick="resumeTimer()" style="width:auto; padding:8px 15px; background:#17a2b8; display:none;">Resume</button>
+                <button id="btnStop" onclick="stopTimer()" style="width:auto; padding:8px 15px; background:#dc3545;" disabled>Stop</button>
+            </div>
+        </div>
+
         <input id="docId" type="hidden"> <input id="name" placeholder="👤 Customer Name">
         <input id="village" placeholder="🏡 Village Name">
         <input id="rate" type="number" placeholder="💰 Rate per Hour" oninput="calcCust()">
@@ -95,6 +105,7 @@
         <button id="btnCust" onclick="saveCustomer()">✅ Save/Update Customer</button>
         <button id="nextCust" onclick="reset('cust')" style="background:#28a745; display:none;">➕ Add Next Customer</button>
     </div>
+
     <div id="fuel" class="section">
         <h3>⛽ Fuel Entry</h3>
         <input id="fDocId" type="hidden"> 
@@ -156,12 +167,86 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, updateDoc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = { apiKey: "AIzaSyB7Wv6gS247nbC-eA1Ou1Df9ZY0dct0iLA", authDomain: "syed-3abeb.firebaseapp.com", projectId: "syed-3abeb" };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// --- TIMER LOGIC ---
+let timerInterval;
+let startTime;
+let elapsedPausedTime = 0;
+let isRunning = false;
+
+window.startTimer = () => {
+    startTime = Date.now();
+    elapsedPausedTime = 0;
+    isRunning = true;
+    document.getElementById('liveTimer').innerText = "00:00:00";
+    document.getElementById('btnStart').style.display = "none";
+    document.getElementById('btnPause').style.display = "inline-block";
+    document.getElementById('btnStop').disabled = false;
+    
+    const now = new Date();
+    document.getElementById('start').value = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+    
+    timerInterval = setInterval(updateTimerDisplay, 1000);
+};
+
+window.pauseTimer = () => {
+    clearInterval(timerInterval);
+    elapsedPausedTime += Date.now() - startTime;
+    isRunning = false;
+    document.getElementById('btnPause').style.display = "none";
+    document.getElementById('btnResume').style.display = "inline-block";
+};
+
+window.resumeTimer = () => {
+    startTime = Date.now();
+    isRunning = true;
+    document.getElementById('btnResume').style.display = "none";
+    document.getElementById('btnPause').style.display = "inline-block";
+    timerInterval = setInterval(updateTimerDisplay, 1000);
+};
+
+window.stopTimer = () => {
+    clearInterval(timerInterval);
+    const now = new Date();
+    document.getElementById('end').value = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+    
+    isRunning = false;
+    document.getElementById('btnStart').style.display = "inline-block";
+    document.getElementById('btnPause').style.display = "none";
+    document.getElementById('btnResume').style.display = "none";
+    document.getElementById('btnStop').disabled = true;
+    
+    window.calcCust();
+};
+
+function updateTimerDisplay() {
+    let now = Date.now();
+    let totalMs = (isRunning ? (now - startTime) : 0) + elapsedPausedTime;
+    let seconds = Math.floor((totalMs / 1000) % 60);
+    let minutes = Math.floor((totalMs / (1000 * 60)) % 60);
+    let hours = Math.floor((totalMs / (1000 * 60 * 60)) % 24);
+    document.getElementById('liveTimer').innerText = `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+}
+// --- END TIMER LOGIC ---
+
+// --- DELETE LOGIC ---
+window.deleteData = async (col, id) => {
+    if(confirm("क्या आप वाकई इसे डिलीट करना चाहते हैं?")) {
+        try {
+            await deleteDoc(doc(db, "users", auth.currentUser.uid, col, id));
+            alert("Deleted successfully! ✅");
+            loadHist(col);
+        } catch(e) {
+            alert("Error: " + e.message);
+        }
+    }
+};
 
 window.reportDataStorage = {};
 window.allRecords = []; 
@@ -201,14 +286,10 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Analytics Calculation (Income - Fuel - Expenses = Net)
 window.calculateAnalytics = async () => {
     const h = document.getElementById("analyticsContent");
     h.innerHTML = "🔄 Calculating...";
-    let totalIncome = 0;
-    let totalFuel = 0;
-    let totalExpenses = 0;
-
+    let totalIncome = 0; let totalFuel = 0; let totalExpenses = 0;
     try {
         const collections = ['customers', 'fuel', 'expenses'];
         for(let col of collections) {
@@ -225,16 +306,7 @@ window.calculateAnalytics = async () => {
         }
         let netBalance = totalIncome - totalFuel - totalExpenses;
         let color = netBalance >= 0 ? '#28a745' : '#dc3545';
-        h.innerHTML = `
-            <div class="hist-card">
-                <div class="hist-title">Business Summary</div>
-                <div class="hist-row"><span>Total Income:</span> <b style="color:#28a745;">+ ₹${totalIncome.toFixed(2)}</b></div>
-                <div class="hist-row"><span>Total Fuel:</span> <b style="color:#dc3545;">- ₹${totalFuel.toFixed(2)}</b></div>
-                <div class="hist-row"><span>Total Expenses:</span> <b style="color:#dc3545;">- ₹${totalExpenses.toFixed(2)}</b></div>
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
-                <div class="hist-row" style="font-size:18px;"><span><b>Net Balance:</b></span> <b style="color:${color};">₹ ${netBalance.toFixed(2)}</b></div>
-            </div>
-        `;
+        h.innerHTML = `<div class="hist-card"><div class="hist-title">Business Summary</div><div class="hist-row"><span>Total Income:</span> <b style="color:#28a745;">+ ₹${totalIncome.toFixed(2)}</b></div><div class="hist-row"><span>Total Fuel:</span> <b style="color:#dc3545;">- ₹${totalFuel.toFixed(2)}</b></div><div class="hist-row"><span>Total Expenses:</span> <b style="color:#dc3545;">- ₹${totalExpenses.toFixed(2)}</b></div><hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;"><div class="hist-row" style="font-size:18px;"><span><b>Net Balance:</b></span> <b style="color:${color};">₹ ${netBalance.toFixed(2)}</b></div></div>`;
     } catch(e) { h.innerHTML = "❌ Data loading error."; }
 };
 
@@ -271,18 +343,14 @@ window.showReportDetails = (type, date) => {
         } else if(type === 'fuel') {
             totalAmt += parseFloat(d.total.replace('₹', '').trim()) || 0;
             totalLitres += parseFloat(d.litre) || 0;
-            html += `<div style="border-bottom:1px solid #eee; margin-bottom:8px; padding-bottom:5px;">
-                        <div class="hist-row"><span>🧪 ${d.litre}L @ ${d.rate}</span> <b>${d.total}</b></div>
-                        <div class="hist-row" style="font-size:12px; color:#777;"><span>🕒 ${formatAMPM(d.time || '')}</span></div>
-                     </div>`;
+            html += `<div style="border-bottom:1px solid #eee; margin-bottom:8px; padding-bottom:5px;"><div class="hist-row"><span>🧪 ${d.litre}L @ ${d.rate}</span> <b>${d.total}</b></div><div class="hist-row" style="font-size:12px; color:#777;"><span>🕒 ${formatAMPM(d.time || '')}</span></div></div>`;
         } else if(type === 'expenses') {
             totalAmt += parseFloat(d.total.replace('₹', '').trim()) || 0;
             for(let i=1; i<=10; i++) if(d.items && d.items[`d${i}`]) html += `<div class="hist-row"><span>${d.items[`d${i}`]}</span> <b>₹${d.items[`a${i}`]}</b></div>`;
         }
     });
     if(type === 'customers') {
-        html += `<div class="hist-row" style="border-top:2px solid #007bff; margin-top:10px; padding-top:10px; font-weight:bold;"><span>👥 Total Customers:</span> <b>${totalCustomers}</b></div>`;
-        html += `<div class="hist-row"><span>⏳ Total Minutes:</span> <b>${totalMinutes} Mins</b></div>`;
+        html += `<div class="hist-row" style="border-top:2px solid #007bff; margin-top:10px; padding-top:10px; font-weight:bold;"><span>👥 Total Customers:</span> <b>${totalCustomers}</b></div><div class="hist-row"><span>⏳ Total Minutes:</span> <b>${totalMinutes} Mins</b></div>`;
     } else if (type === 'fuel') {
         html += `<div class="hist-row" style="border-top:2px solid #007bff; margin-top:10px; padding-top:10px; font-weight:bold;"><span>🧪 Total Litres:</span> <b>${totalLitres.toFixed(2)} L</b></div>`;
     }
@@ -295,12 +363,10 @@ window.tab = (t) => {
     document.getElementById("report").style.display = (t==='report'?'block':'none');
     document.getElementById("history").style.display = (t==='hist'?'block':'none');
     document.getElementById("analytics").style.display = (t==='analytics'?'block':'none');
-    
     document.getElementById("n1").classList.toggle('active', t==='dash');
     document.getElementById("n3").classList.toggle('active', t==='report');
     document.getElementById("n2").classList.toggle('active', t==='hist');
     document.getElementById("n4").classList.toggle('active', t==='analytics');
-    
     if(t==='hist') loadHist('customers');
     if(t==='analytics') calculateAnalytics();
 };
@@ -311,47 +377,14 @@ window.calcTotal = () => { let t=0; for(let i=1; i<=10; i++) t+=parseFloat(docum
 window.saveCustomer = async () => { let btn=document.getElementById("btnCust"); let docId=document.getElementById("docId").value; btn.disabled=true; let data={name:document.getElementById("name").value, village:document.getElementById("village").value, rate:document.getElementById("rate").value, start:document.getElementById("start").value, end:document.getElementById("end").value, minutes:document.getElementById("resMins").innerText, total:document.getElementById("resTotal").innerText, ts:new Date()}; try { if(docId) await updateDoc(doc(db, "users", auth.currentUser.uid, "customers", docId), data); else await addDoc(collection(db, "users", auth.currentUser.uid, "customers"), data); alert("Saved! ✅"); btn.style.display="none"; document.getElementById("nextCust").style.display="block"; } catch(e) { alert(e.message); btn.disabled=false; } };
 window.saveFuel = async () => { let btn=document.getElementById("btnFuel"); let fDocId=document.getElementById("fDocId").value; btn.disabled=true; let data={date:document.getElementById("fDate").value, time:document.getElementById("fTime").value, rate:document.getElementById("fRate").value, litre:document.getElementById("fLitre").value, total:document.getElementById("resFuel").innerText, ts:new Date()}; try { if(fDocId) await updateDoc(doc(db, "users", auth.currentUser.uid, "fuel", fDocId), data); else await addDoc(collection(db, "users", auth.currentUser.uid, "fuel"), data); alert("Saved! ✅"); btn.style.display="none"; document.getElementById("nextFuel").style.display="block"; } catch(e) { alert(e.message); btn.disabled=false; } };
 window.saveExpense = async () => { let btn=document.getElementById("btnExp"); btn.disabled=true; let eDocId=document.getElementById("eDocId").value; let items={}; for(let i=1;i<=10;i++){ items[`d${i}`]=document.getElementById(`d${i}`).value; items[`a${i}`]=document.getElementById(`a${i}`).value; } let data={date:document.getElementById("eDate").value, total:document.getElementById("eTotal").innerText, items:items, ts:new Date()}; try { if(eDocId) await updateDoc(doc(db, "users", auth.currentUser.uid, "expenses", eDocId), data); else await addDoc(collection(db, "users", auth.currentUser.uid, "expenses"), data); alert("Saved! ✅"); btn.style.display="none"; document.getElementById("nextExp").style.display="block"; } catch(e) { alert(e.message); btn.disabled=false; } };
-window.reset = (type) => { if(type==='cust'){ document.getElementById("docId").value=""; ['name','village','rate','start','end'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnCust").style.display="block"; document.getElementById("btnCust").disabled=false; document.getElementById("nextCust").style.display="none"; document.getElementById("custRes").style.display="none"; } else if(type==='fuel'){ document.getElementById("fDocId").value=""; ['fRate','fLitre','fTime'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnFuel").style.display="block"; document.getElementById("btnFuel").disabled=false; document.getElementById("nextFuel").style.display="none"; document.getElementById("fuelRes").style.display="none"; } else if(type==='exp'){ document.getElementById("eDocId").value=""; document.getElementById("eDate").value=""; for(let i=1;i<=10;i++){ document.getElementById(`d${i}`).value=""; document.getElementById(`a${i}`).value=""; } document.getElementById("eTotal").innerText="0"; document.getElementById("btnExp").style.display="block"; document.getElementById("btnExp").disabled=false; document.getElementById("nextExp").style.display="none"; } };
+window.reset = (type) => { if(type==='cust'){ document.getElementById("docId").value=""; ['name','village','rate','start','end'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnCust").style.display="block"; document.getElementById("btnCust").disabled=false; document.getElementById("nextCust").style.display="none"; document.getElementById("custRes").style.display="none"; document.getElementById('liveTimer').innerText="00:00:00"; } else if(type==='fuel'){ document.getElementById("fDocId").value=""; ['fRate','fLitre','fTime'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnFuel").style.display="block"; document.getElementById("btnFuel").disabled=false; document.getElementById("nextFuel").style.display="none"; document.getElementById("fuelRes").style.display="none"; } else if(type==='exp'){ document.getElementById("eDocId").value=""; document.getElementById("eDate").value=""; for(let i=1;i<=10;i++){ document.getElementById(`d${i}`).value=""; document.getElementById(`a${i}`).value=""; } document.getElementById("eTotal").innerText="0"; document.getElementById("btnExp").style.display="block"; document.getElementById("btnExp").disabled=false; document.getElementById("nextExp").style.display="none"; } };
 
-window.loadHist = async (col) => { 
-    window.currentCol = col;
-    window.allRecords = [];
-    const h = document.getElementById("histData");
-    const searchInput = document.getElementById("histSearch");
-    searchInput.style.display = (col === 'customers') ? "block" : "none";
-    searchInput.value = ""; 
-    h.innerHTML = "🔄 Loading..."; 
-    const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, col), orderBy("ts", "desc")));
-    snap.forEach(dDoc => { let d = dDoc.data(); window.allRecords.push({...d, id: dDoc.id}); });
-    renderHist(window.allRecords, col);
-};
-
-window.filterHist = () => {
-    const searchTerm = document.getElementById("histSearch").value.toLowerCase();
-    const filtered = window.allRecords.filter(d => d.name && d.name.toLowerCase().includes(searchTerm));
-    renderHist(filtered, window.currentCol);
-};
-
-window.renderHist = (data, col) => {
-    const h = document.getElementById("histData");
-    h.innerHTML = "";
-    if(data.length === 0) h.innerHTML = "<p style='text-align:center;'>No records found.</p>";
-    data.forEach(d => {
-        let dateStr = d.ts ? d.ts.toDate().toLocaleDateString('en-GB') : "N/A";
-        let content = `<div class="hist-card">`;
-        if(col === 'customers'){
-            content += `<div class="hist-title">👤 ${d.name}</div><div class="hist-row"><span>Village:</span><b>${d.village || 'N/A'}</b></div><div class="hist-row"><span>Date:</span><b>${dateStr}</b></div><div class="hist-row"><span>Rate:</span><b>₹ ${d.rate}/hr</b></div><div class="hist-row"><span>Time:</span>${formatAMPM(d.start)}-${formatAMPM(d.end)}</div><div class="hist-row"><span>Minutes:</span><b>${d.minutes}</b></div><div class="hist-total">Total: ${d.total}</div>`;
-        } else if(col === 'fuel'){
-            content += `<div class="hist-title">⛽ Fuel Entry</div><div class="hist-row"><span>Date:</span>${d.date} ${formatAMPM(d.time||'')}</div><div class="hist-row"><span>Fuel:</span><b>${d.litre} L</b></div><div class="hist-row"><span>Rate:</span><b>₹ ${d.rate}/L</b></div><div class="hist-total">Total: ${d.total}</div>`;
-        } else if(col === 'expenses'){
-            content += `<div class="hist-title">💸 Info: ${d.date||'N/A'}</div>`;
-            for(let i=1;i<=10;i++) if(d.items && d.items[`d${i}`]) content += `<div class="hist-row"><span>${d.items[`d${i}`]}</span><b>₹${d.items[`a${i}`]}</b></div>`;
-            content += `<div class="hist-total">Total: ₹${d.total}</div>`;
-        }
-        content += `<button class="edit-btn" onclick="editData('${col}','${d.id}')">✏️ Edit</button></div>`;
-        h.innerHTML += content;
-    });
-};
+window.loadHist = async (col) => { window.currentCol = col; window.allRecords = []; const h = document.getElementById("histData"); const searchInput = document.getElementById("histSearch"); searchInput.style.display = (col === 'customers') ? "block" : "none"; searchInput.value = ""; h.innerHTML = "🔄 Loading..."; const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, col), orderBy("ts", "desc"))); snap.forEach(dDoc => { let d = dDoc.data(); window.allRecords.push({...d, id: dDoc.id}); }); renderHist(window.allRecords, col); };
+window.filterHist = () => { const searchTerm = document.getElementById("histSearch").value.toLowerCase(); const filtered = window.allRecords.filter(d => d.name && d.name.toLowerCase().includes(searchTerm)); renderHist(filtered, window.currentCol); };
+window.renderHist = (data, col) => { const h = document.getElementById("histData"); h.innerHTML = ""; if(data.length === 0) h.innerHTML = "<p style='text-align:center;'>No records found.</p>"; data.forEach(d => { let dateStr = d.ts ? d.ts.toDate().toLocaleDateString('en-GB') : "N/A"; let content = `<div class="hist-card">`; if(col === 'customers'){ content += `<div class="hist-title">👤 ${d.name}</div><div class="hist-row"><span>Village:</span><b>${d.village || 'N/A'}</b></div><div class="hist-row"><span>Date:</span><b>${dateStr}</b></div><div class="hist-row"><span>Rate:</span><b>₹ ${d.rate}/hr</b></div><div class="hist-row"><span>Time:</span>${formatAMPM(d.start)}-${formatAMPM(d.end)}</div><div class="hist-row"><span>Minutes:</span><b>${d.minutes}</b></div><div class="hist-total">Total: ${d.total}</div>`; } else if(col === 'fuel'){ content += `<div class="hist-title">⛽ Fuel Entry</div><div class="hist-row"><span>Date:</span>${d.date} ${formatAMPM(d.time||'')}</div><div class="hist-row"><span>Fuel:</span><b>${d.litre} L</b></div><div class="hist-row"><span>Rate:</span><b>₹ ${d.rate}/L</b></div><div class="hist-total">Total: ${d.total}</div>`; } else if(col === 'expenses'){ content += `<div class="hist-title">💸 Info: ${d.date||'N/A'}</div>`; for(let i=1;i<=10;i++) if(d.items && d.items[`d${i}`]) content += `<div class="hist-row"><span>${d.items[`d${i}`]}</span><b>₹${d.items[`a${i}`]}</b></div>`; content += `<div class="hist-total">Total: ₹${d.total}</div>`; } 
+    content += `<button class="edit-btn" onclick="editData('${col}','${d.id}')">✏️ Edit</button> `;
+    content += `<button style="background:#dc3545; color:white; padding:5px 12px; font-size:12px; margin-top:10px; border-radius:6px; border:none; cursor:pointer;" onclick="deleteData('${col}','${d.id}')">🗑️ Delete</button></div>`; 
+    h.innerHTML += content; }); };
 
 window.editData = async (col, id) => { const s=await getDoc(doc(db, "users", auth.currentUser.uid, col, id)); const d=s.data(); tab('dash'); if(col==='customers'){ show('customer'); document.getElementById("docId").value=id; document.getElementById("name").value=d.name; document.getElementById("village").value=d.village; document.getElementById("rate").value=d.rate; document.getElementById("start").value=d.start; document.getElementById("end").value=d.end; calcCust(); } else if(col==='fuel'){ show('fuel'); document.getElementById("fDocId").value=id; document.getElementById("fDate").value=d.date; document.getElementById("fTime").value=d.time||""; document.getElementById("fRate").value=d.rate; document.getElementById("fLitre").value=d.litre; calcFuel(); } else if(col==='expenses'){ show('expense'); document.getElementById("eDocId").value=id; document.getElementById("eDate").value=d.date; for(let i=1;i<=10;i++){ document.getElementById(`d${i}`).value=d.items[`d${i}`]||""; document.getElementById(`a${i}`).value=d.items[`a${i}`]||""; } calcTotal(); } };
 window.editProfileName = async () => { const name=prompt("Enter new name:", document.getElementById("displayUserName").innerText); if(name) { await setDoc(doc(db, "userProfiles", auth.currentUser.uid), { name: name }, { merge: true }); document.getElementById("displayUserName").innerText=name; alert("Updated!"); } };
@@ -360,16 +393,6 @@ window.show = (id) => { ['customer','fuel','expense'].forEach(s=>document.getEle
 const box=document.getElementById('expBox');
 for(let i=1;i<=10;i++) box.innerHTML+=`<div style="display:grid; grid-template-columns: 2fr 1fr; gap:5px; margin-bottom:5px;"><input id="d${i}" placeholder="Reason ${i}"><input id="a${i}" type="number" placeholder="Amt" oninput="calcTotal()"></div>`;
 document.getElementById('fDate').valueAsDate=new Date();
-</script>
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('Service Worker Registered!'))
-        .catch(err => console.log('Service Worker Failed:', err));
-    });
-  }
 </script>
 </body>
 </html>
