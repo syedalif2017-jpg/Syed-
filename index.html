@@ -1,398 +1,551 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <title>Syed Business Pro - Central</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#007bff">
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<!doctype html>
+<html lang="en">
 
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 15px; padding-bottom: 90px; touch-action: manipulation; }
-        #initialScreen { display: block; text-align: center; }
-        .header-text { color: #007bff; margin-bottom: 5px; font-size: 24px; }
-        .subtitle { color: #666; margin-bottom: 30px; font-size: 16px; }
-        .card { background: white; width: 100%; max-width: 350px; margin: 0 auto 20px auto; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; text-align: center; }
-        .card:hover { transform: translateY(-5px); }
-        .icon { width: 50px; height: 50px; fill: #007bff; margin-bottom: 10px; }
-        
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; }
-        button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        .back-btn { background: #6c757d; margin-top: 5px; } 
-        .section { background: white; border: 1px solid #ddd; padding: 18px; margin-top: 15px; border-radius: 12px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .active-sec { display: block; }
-        .user-header { background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 20px; margin: -15px -15px 20px -15px; display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 20px 20px; }
-        .summary-box { background: #f8fbff; border: 1px solid #b3d7ff; padding: 15px; border-radius: 10px; margin-top: 12px; display: none; }
-        .summary-line { display: flex; justify-content: space-between; border-bottom: 1px solid #e1efff; padding: 8px 0; font-size: 14px; }
-        .total-text { font-weight: bold; color: #28a745; font-size: 18px; border: none; }
-        .hist-card { background: white; border-left: 6px solid #007bff; padding: 15px; margin-bottom: 12px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .hist-title { font-size: 16px; font-weight: bold; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 8px; }
-        .hist-row { display: flex; justify-content: space-between; font-size: 13px; color: #555; margin: 4px 0; }
-        .hist-total { font-size: 16px; font-weight: bold; color: #28a745; margin-top: 8px; text-align: right; border-top: 1px dashed #ddd; padding-top: 5px; }
-        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 5px; }
-        .menu-item { background: white; padding: 15px 5px; text-align: center; border-radius: 12px; border: 1px solid #eee; cursor: pointer; }
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; height: 70px; z-index: 1000; }
-        .nav-btn { flex: 1; text-align: center; padding: 10px 0; color: #888; font-size: 11px; cursor: pointer; }
-        .nav-btn.active { color: #007bff; font-weight: bold; }
-        .edit-btn { background: #ffc107; color: #212529; padding: 5px 12px; width: auto; font-size: 12px; margin-top: 10px; border-radius: 6px; display: inline-block; }
-    </style>
+<head>
+  <meta charset="utf-8">
+  <title>Civil Registration System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style type="text/css">
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    body, html {
+      height: 100%;
+      background-color: #f4f6f9;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Background Page Watermark Repeating Logo Pattern */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('https://dc.crsorgi.gov.in/crs/assets/logo/crs-logo.png');
+      background-repeat: repeat;
+      background-size: 130px 130px;
+      opacity: 0.08;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Loader Splash Screen Styling */
+    .loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      animation: hideLoader 0.4s ease 0.8s forwards;
+    }
+
+    @keyframes hideLoader {
+      0% { opacity: 1; visibility: visible; }
+      100% { opacity: 0; visibility: hidden; pointer-events: none; }
+    }
+
+    .loader-container {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .loader-logo {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+      z-index: 2;
+    }
+
+    .spinning-ring {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 4px solid #e0e0e0;
+      border-top: 4px solid #1b4f72;
+      border-radius: 50%;
+      animation: spinLoader 0.8s linear infinite;
+      z-index: 1;
+    }
+
+    @keyframes spinLoader {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Fixed Top Header with Vibrant Tricolor Background */
+    .top-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: linear-gradient(90deg, rgba(230, 126, 34, 0.45) 0%, rgba(255, 255, 255, 0.92) 42%, rgba(255, 255, 255, 0.92) 58%, rgba(39, 174, 96, 0.45) 100%), #ffffff;
+      border-bottom: 3px solid #d0d0d0;
+      padding: 6px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      z-index: 1000;
+      height: 65px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-left img.crs-logo-img {
+      height: 42px;
+      width: 42px;
+      object-fit: contain;
+    }
+
+    .header-title h2 {
+      font-size: 13px;
+      color: #000000;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .header-title p {
+      font-size: 7px;
+      color: #111;
+      font-weight: 500;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
+    .header-center {
+      display: flex;
+      align-items: center;
+      gap: 45px;
+      position: absolute;
+      left: 52%;
+      transform: translateX(-50%);
+    }
+
+    .header-center img.amrit-img {
+      height: 36px;
+      object-fit: contain;
+    }
+
+    .header-center img.emblem-img {
+      height: 40px;
+      object-fit: contain;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: #1a2530;
+      color: #ffffff;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .login-group {
+      display: flex;
+      align-items: center;
+      background: #34495e;
+      border-radius: 20px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .lock-btn {
+      background: transparent;
+      color: white;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+
+    .login-btn {
+      background: #2980b9;
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* Scrollable Certificate Container with proper bottom spacing */
+    .certificate-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 85px 15px 190px 15px;
+      min-height: 100vh;
+    }
+
+    .certificate-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #d0d0d0;
+      position: relative;
+    }
+
+    /* Card Inside Watermark */
+    .certificate-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('https://dc.crsorgi.gov.in/crs/assets/logo/crs-logo.png');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 240px 240px;
+      opacity: 0.12;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      position: relative;
+      z-index: 1;
+    }
+
+    .details-table th, .details-table td {
+      padding: 11px 14px;
+      font-size: 12.5px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+
+    .details-table th {
+      width: 38%;
+      color: #444;
+      font-weight: 500;
+      background-color: rgba(248, 249, 250, 0.9);
+    }
+
+    .details-table td {
+      width: 62%;
+      color: #222;
+      font-weight: 400;
+      word-break: break-word;
+      background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* Fixed Bottom Footer layout */
+    .footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: linear-gradient(135deg, #205c7d 0%, #11384e 100%);
+      color: #ffffff;
+      padding: 8px 15px;
+      text-align: center;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+
+    .footer-logos {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .footer-logos img {
+      height: 22px;
+      background: #ffffff;
+      padding: 2px 5px;
+      border-radius: 3px;
+      object-fit: contain;
+    }
+
+    .footer-links {
+      font-size: 10px;
+      margin-bottom: 2px;
+      color: #e0f7fa;
+    }
+
+    .footer-links a {
+      color: #ffffff;
+      text-decoration: none;
+      margin: 0 3px;
+    }
+
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+
+    .footer-sublinks {
+      font-size: 9.5px;
+      margin-bottom: 3px;
+      color: #b2ebf2;
+    }
+
+    .footer-sublinks a {
+      color: #ffffff;
+      text-decoration: none;
+      margin: 0 3px;
+    }
+
+    .footer-sublinks a:hover {
+      text-decoration: underline;
+    }
+
+    .footer-info {
+      font-size: 9px;
+      color: #cfd8dc;
+      line-height: 1.3;
+    }
+
+    /* Mobile Responsive Optimizations */
+    @media screen and (max-width: 768px) {
+      .top-header {
+        height: 56px;
+        padding: 4px 10px;
+      }
+      .header-center {
+        display: none;
+      }
+      .header-left img.crs-logo-img {
+        height: 34px;
+        width: 34px;
+      }
+      .header-title h2 {
+        font-size: 10.5px;
+      }
+      .header-title p {
+        font-size: 5.5px;
+      }
+      .icon-btn, .login-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+      }
+      .lock-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 11px;
+      }
+      .certificate-container {
+        padding: 70px 10px 185px 10px;
+      }
+      .details-table th, .details-table td {
+        padding: 8px 10px;
+        font-size: 11px;
+      }
+      .footer-logos img {
+        height: 18px;
+      }
+      .footer-links, .footer-sublinks {
+        font-size: 8.5px;
+      }
+      .footer {
+        padding: 6px 8px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<div id="initialScreen">
-    <h1 class="header-text">Syed Business Pro</h1>
-    <p class="subtitle">Choose Your Access Type</p>
-    <div class="card" onclick="goToUserAuth()">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        <h2>User Login</h2>
+  <!-- Fullscreen Loading Splash Screen with Rotating Logo -->
+  <div id="page-loader" class="loader-overlay">
+    <div class="loader-container">
+      <div class="spinning-ring"></div>
+      <img src="https://i.postimg.cc/mgczJ8hv/0adbbc2674802ea0cfdaf7c82a234546342579dd75b4317cbee5d4f91da27364-0.png" alt="Loading Logo" class="loader-logo">
     </div>
-    <div class="card" onclick="goToAdminAuth()">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-        <h2>Admin Login</h2>
-    </div>
-</div>
-
-<div id="authSection" class="section">
-    <h2 id="authTitle" style="text-align:center;">🔐 Login</h2>
-    <div id="regFields" style="display:none"><input id="regName" placeholder="👤 Full Name"></div>
-    <input id="mobile" placeholder="📱 Mobile Number" type="tel">
-    <input id="password" type="password" placeholder="🔑 Password">
-    <button id="authBtn" onclick="handleAuth()">Login</button>
-    <p style="text-align:center; font-size:14px; color: #666;" onclick="toggleAuth()"><span id="toggleText">New User? Register here</span></p>
-    <button class="back-btn" onclick="goBack()">⬅ Back</button>
-</div>
-
-<div id="dashboard" style="display:none">
-    <div class="user-header">
-        <span>👋 Hi, <b id="displayUserName">User</b> 
-            <i class="fas fa-edit" style="cursor:pointer; margin-left:10px;" onclick="editProfileName()"></i>
-            <i class="fas fa-key" style="cursor:pointer; margin-left:10px;" onclick="changeUserPassword()"></i>
-        </span>
-        <i class="fas fa-user-circle" style="font-size:24px"></i>
-    </div>
-    <div class="menu-grid">
-        <div class="menu-item" onclick="show('customer')"><i class="fas fa-user-plus"></i><br>Customer</div>
-        <div class="menu-item" onclick="show('fuel')"><i class="fas fa-gas-pump"></i><br>Fuel</div>
-        <div class="menu-item" onclick="show('expense')"><i class="fas fa-file-invoice-dollar"></i><br>Others</div>
+  </div>
+  
+  <!-- Fixed Top Header Bar -->
+  <header class="top-header">
+    <div class="header-left">
+      <img src="https://i.postimg.cc/mgczJ8hv/0adbbc2674802ea0cfdaf7c82a234546342579dd75b4317cbee5d4f91da27364-0.png" alt="CRS Logo" class="crs-logo-img">
+      <div class="header-title">
+        <h2>Birth & Death Registration</h2>
+        <p>Office of the Registrar General & Census Commissioner, India<br>भारत के महारुहारजिस्ट्रार एवं जनगणना आयुक्त का कार्यालय</p>
+      </div>
     </div>
     
-    <div id="customer" class="section active-sec">
-        <h3>👥 Customer Entry</h3>
-        
-        <div id="timerControls" style="text-align:center; background:#f8f9fa; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #ddd;">
-            <div id="liveTimer" style="font-size:32px; font-weight:bold; color:#007bff; margin-bottom:10px;">00:00:00</div>
-            <div style="display:flex; gap:10px; justify-content:center;">
-                <button id="btnStart" onclick="startTimer()" style="width:auto; padding:8px 15px; background:#28a745;">Start</button>
-                <button id="btnPause" onclick="pauseTimer()" style="width:auto; padding:8px 15px; background:#ffc107; display:none;">Pause</button>
-                <button id="btnResume" onclick="resumeTimer()" style="width:auto; padding:8px 15px; background:#17a2b8; display:none;">Resume</button>
-                <button id="btnStop" onclick="stopTimer()" style="width:auto; padding:8px 15px; background:#dc3545;" disabled>Stop</button>
-            </div>
-        </div>
-
-        <input id="docId" type="hidden"> <input id="name" placeholder="👤 Customer Name">
-        <input id="village" placeholder="🏡 Village Name">
-        <input id="rate" type="number" placeholder="💰 Rate per Hour" oninput="calcCust()">
-        <div style="display:flex; gap:10px;">
-            <div style="flex:1"><label style="font-size:12px;">🕒 Start</label><input type="time" id="start" oninput="calcCust()"></div>
-            <div style="flex:1"><label style="font-size:12px;">🕒 End</label><input type="time" id="end" oninput="calcCust()"></div>
-        </div>
-        <div id="custRes" class="summary-box">
-            <div class="summary-line"><span>⏳ Total Minutes:</span> <span id="resMins">0</span></div>
-            <div class="summary-line total-text"><span>💵 Total Amount:</span> <span id="resTotal">₹ 0.00</span></div>
-        </div>
-        <button id="btnCust" onclick="saveCustomer()">✅ Save/Update Customer</button>
-        <button id="nextCust" onclick="reset('cust')" style="background:#28a745; display:none;">➕ Add Next Customer</button>
+    <div class="header-center">
+      <img src="https://i.postimg.cc/d1CgfPKN/914a22791ab57f56a93866bb874c8495625379a1ad1faed692850d9e5f93c953-0.png" alt="Amrit Mahotsav" class="amrit-img">
+      <img src="https://i.postimg.cc/7ZydWYH7/263e90415af02b501e6ab9e402f9ff0a2aa6f03749951cb221cff5555678f980-0.png" alt="National Emblem" class="emblem-img">
     </div>
 
-    <div id="fuel" class="section">
-        <h3>⛽ Fuel Entry</h3>
-        <input id="fDocId" type="hidden"> 
-        <label>📅 Date</label><input type="date" id="fDate">
-        <label>🕒 Time</label><input type="time" id="fTime">
-        <input id="fRate" type="number" placeholder="⛽ Rate per Litre" oninput="calcFuel()">
-        <input id="fLitre" type="number" placeholder="🧪 Litres" oninput="calcFuel()">
-        <div id="fuelRes" class="summary-box"><div class="summary-line total-text"><span>💰 Total:</span> <span id="resFuel">₹ 0.00</span></div></div>
-        <button id="btnFuel" onclick="saveFuel()">✅ Save/Update Fuel</button>
-        <button id="nextFuel" onclick="reset('fuel')" style="background:#28a745; display:none;">➕ Add Next Fuel</button>
+    <div class="header-right">
+      <button class="icon-btn" title="Dark Mode">🌙</button>
+      <div class="login-group">
+        <button class="lock-btn" title="Secure">🔒</button>
+        <button class="login-btn" title="Login">➔</button>
+      </div>
+      <button class="icon-btn" title="Menu">☰</button>
     </div>
-    <div id="expense" class="section">
-        <h3>💸 Others / Information</h3>
-        <input id="eDocId" type="hidden">
-        <label>📅 Date</label>
-        <input type="date" id="eDate">
-        <div id="expBox"></div>
-        <div style="text-align:right; font-weight:bold; color:#28a745; margin:10px;">Total: ₹ <span id="eTotal">0</span></div>
-        <button id="btnExp" onclick="saveExpense()">✅ Save All Info</button>
-        <button id="nextExp" onclick="reset('exp')" style="background:#28a745; display:none;">➕ Add New Info</button>
+  </header>
+
+  <!-- Scrollable Certificate Container -->
+  <main class="certificate-container">
+    <div class="certificate-card">
+      <table class="details-table">
+        <tr>
+          <th>Registration Number</th>
+          <td>B202609015336353016</td>
+        </tr>
+        <tr>
+          <th>NAME</th>
+          <td>MAMINA KHATUN</td>
+        </tr>
+        <tr>
+          <th>GENDER</th>
+          <td>Female</td>
+        </tr>
+        <tr>
+          <th>DOB</th>
+          <td>14-05-2007</td>
+        </tr>
+        <tr>
+          <th>Name Of Mother</th>
+          <td>NAIMA BIBI</td>
+        </tr>
+        <tr>
+          <th>Name Of Father</th>
+          <td>SEKH ILIYAS</td>
+        </tr>
+        <tr>
+          <th>Place of Birth</th>
+          <td>SURI SADAR HOSPITAL</td>
+        </tr>
+        <tr>
+          <th>Registration Date</th>
+          <td>08-01-2021</td>
+        </tr>
+        <tr>
+          <th>Registration Unit Name</th>
+          <td>SURI SADAR HOSPITAL</td>
+        </tr>
+        <tr>
+          <th>Registration Unit Code</th>
+          <td>01533</td>
+        </tr>
+      </table>
     </div>
-</div>
+  </main>
 
-<div id="report" style="display:none; padding:10px;">
-    <h3>📊 Select Report Type</h3>
-    <div style="display:grid; grid-template-columns: 1fr; gap:10px;">
-        <button onclick="loadReportMenu('customers')" style="background:#007bff;">👥 Customer Report</button>
-        <button onclick="loadReportMenu('fuel')" style="background:#fd7e14;">⛽ Fuel Report</button>
-        <button onclick="loadReportMenu('expenses')" style="background:#6f42c1;">💸 Expenses Report</button>
+  <!-- Fixed Bottom Footer Section -->
+  <footer class="footer">
+    <div class="footer-logos">
+      <img src="https://data.gov.in/sites/all/themes/ogpl/images/logo.png" alt="data.gov.in" onerror="this.style.display='none'">
+      <img src="https://india.gov.in/sites/upload_files/npi/files/logo_i.png" alt="india.gov.in" onerror="this.style.display='none'">
+      <img src="https://www.pmindia.gov.in/wp-content/uploads/2020/03/pmindia-logo.png" alt="PM INDIA" onerror="this.style.display='none'">
+      <img src="https://www.makeinindia.com/images/makeinindia_logo.png" alt="MAKE IN INDIA" onerror="this.style.display='none'">
+      <img src="https://digitalindia.gov.in/writings/uploads/digitalIndiaLogo.png" alt="Digital India" onerror="this.style.display='none'">
     </div>
-    <div id="reportData" style="margin-top:20px;"></div>
-</div>
 
-<div id="history" style="display:none; padding:10px;">
-    <h3>📋 Recent Records</h3>
-    <input id="histSearch" placeholder="🔍 Customer ka naam likhein..." oninput="filterHist()" style="display:none; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc; width:100%; box-sizing: border-box;">
-    
-    <div id="hist-controls" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-bottom:15px;">
-        <button onclick="loadHist('customers')" style="font-size:11px; padding:8px; background:#007bff;">👤 Cust</button>
-        <button onclick="loadHist('fuel')" style="font-size:11px; padding:8px; background:#fd7e14;">⛽ Fuel</button>
-        <button onclick="loadHist('expenses')" style="font-size:11px; padding:8px; background:#6f42c1;">💸 Info</button>
+    <div class="footer-links">
+      <a href="#">Website Policy</a> | 
+      <a href="#">Mobile App Privacy Policy</a> | 
+      <a href="#">Terms & Conditions</a> | 
+      <a href="#">Accessibility Statement</a> | 
+      <a href="#">Web Information Manager</a>
     </div>
-    <div id="histData"></div>
-</div>
 
-<div id="analytics" style="display:none; padding:10px;">
-    <h3>📈 Business Analytics</h3>
-    <div id="analyticsContent" style="margin-top:20px;">🔄 Calculating...</div>
-</div>
-
-<nav class="bottom-nav" id="nav" style="display:none">
-    <div class="nav-btn" id="n1" onclick="tab('dash')"><i class="fas fa-home"></i><br>Home</div>
-    <div class="nav-btn" id="n4" onclick="tab('analytics')"><i class="fas fa-chart-line"></i><br>Analytics</div>
-    <div class="nav-btn" id="n3" onclick="tab('report')"><i class="fas fa-chart-pie"></i><br>Report</div>
-    <div class="nav-btn" id="n2" onclick="tab('hist')"><i class="fas fa-history"></i><br>History</div>
-    <div class="nav-btn" onclick="logOut()"><i class="fas fa-sign-out-alt"></i><br>Logout</div>
-</nav>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, updateDoc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const firebaseConfig = { apiKey: "AIzaSyB7Wv6gS247nbC-eA1Ou1Df9ZY0dct0iLA", authDomain: "syed-3abeb.firebaseapp.com", projectId: "syed-3abeb" };
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// --- TIMER LOGIC ---
-let timerInterval;
-let startTime;
-let elapsedPausedTime = 0;
-let isRunning = false;
-
-window.startTimer = () => {
-    startTime = Date.now();
-    elapsedPausedTime = 0;
-    isRunning = true;
-    document.getElementById('liveTimer').innerText = "00:00:00";
-    document.getElementById('btnStart').style.display = "none";
-    document.getElementById('btnPause').style.display = "inline-block";
-    document.getElementById('btnStop').disabled = false;
+    <div class="footer-sublinks">
+      <a href="#">Feedback</a> | 
+      <a href="#">Sitemap</a> | 
+      <a href="#">Contact Us</a> | 
+      <a href="#">Vacancies</a> | 
+      <a href="#">Product & Services</a> | 
+      <a href="#">Pricing</a> | 
+      <a href="#">Cancellation Policy</a> | 
+      <a href="#">Grievance Management Policy</a>
+    </div>
     
-    const now = new Date();
-    document.getElementById('start').value = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
-    
-    timerInterval = setInterval(updateTimerDisplay, 1000);
-};
+    <div class="footer-info">
+      Last Updated: 30-01-2024 12:16:17<br>
+      Website Developed & Maintained by Office of the Registrar General & Census Commissioner of India, Ministry of Home Affairs<br>
+      © 2026 - The Registrar General & Census Commissioner of India - <span id="live-datetime"></span>
+    </div>
+  </footer>
 
-window.pauseTimer = () => {
-    clearInterval(timerInterval);
-    elapsedPausedTime += Date.now() - startTime;
-    isRunning = false;
-    document.getElementById('btnPause').style.display = "none";
-    document.getElementById('btnResume').style.display = "inline-block";
-};
-
-window.resumeTimer = () => {
-    startTime = Date.now();
-    isRunning = true;
-    document.getElementById('btnResume').style.display = "none";
-    document.getElementById('btnPause').style.display = "inline-block";
-    timerInterval = setInterval(updateTimerDisplay, 1000);
-};
-
-window.stopTimer = () => {
-    clearInterval(timerInterval);
-    const now = new Date();
-    document.getElementById('end').value = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
-    
-    isRunning = false;
-    document.getElementById('btnStart').style.display = "inline-block";
-    document.getElementById('btnPause').style.display = "none";
-    document.getElementById('btnResume').style.display = "none";
-    document.getElementById('btnStop').disabled = true;
-    
-    window.calcCust();
-};
-
-function updateTimerDisplay() {
-    let now = Date.now();
-    let totalMs = (isRunning ? (now - startTime) : 0) + elapsedPausedTime;
-    let seconds = Math.floor((totalMs / 1000) % 60);
-    let minutes = Math.floor((totalMs / (1000 * 60)) % 60);
-    let hours = Math.floor((totalMs / (1000 * 60 * 60)) % 24);
-    document.getElementById('liveTimer').innerText = `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
-}
-// --- END TIMER LOGIC ---
-
-// --- DELETE LOGIC ---
-window.deleteData = async (col, id) => {
-    if(confirm("क्या आप वाकई इसे डिलीट करना चाहते हैं?")) {
-        try {
-            await deleteDoc(doc(db, "users", auth.currentUser.uid, col, id));
-            alert("Deleted successfully! ✅");
-            loadHist(col);
-        } catch(e) {
-            alert("Error: " + e.message);
-        }
+  <!-- JavaScript for Live Automatic Date & Time -->
+  <script>
+    function updateDateTime() {
+      const now = new Date();
+      const options = { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit', 
+        hour12: true 
+      };
+      const dtElement = document.getElementById('live-datetime');
+      if (dtElement) {
+        dtElement.innerText = now.toLocaleString('en-IN', options);
+      }
     }
-};
+    
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
 
-window.reportDataStorage = {};
-window.allRecords = []; 
-window.currentCol = ""; 
-
-window.formatAMPM = (t) => { if(!t) return ""; let [h,m] = t.split(':'); let ap = h>=12?'PM':'AM'; h=h%12||12; return `${h}:${m} ${ap}`; };
-window.printReport = (divId) => {
-    let content = document.getElementById(divId).innerHTML;
-    let win = window.open('', '', 'height=600, width=500');
-    win.document.write('<html><head><title>Report</title><style>body{font-family:Arial; padding:20px;}.hist-card{border:1px solid #ccc; padding:15px; border-radius:10px;}.hist-title{font-weight:bold; font-size:18px; border-bottom:1px solid #ddd; padding-bottom:10px;}.hist-row{display:flex; justify-content:space-between; margin:5px 0;}.hist-total{font-weight:bold; font-size:16px; border-top:1px solid #ddd; padding-top:10px; text-align:right;}</style></head><body>' + content + '</body></html>');
-    win.document.close(); win.print();
-};
-window.logOut = async () => { await signOut(auth); location.reload(); };
-window.goToUserAuth = () => { document.getElementById("initialScreen").style.display = "none"; document.getElementById("authSection").style.display = "block"; };
-window.goToAdminAuth = () => { alert("Admin section restricted."); };
-window.goBack = () => { location.reload(); };
-
-let isLoginMode = true;
-window.toggleAuth = () => { isLoginMode = !isLoginMode; document.getElementById("authTitle").innerText = isLoginMode ? "🔐 Login" : "📝 Register"; document.getElementById("authBtn").innerText = isLoginMode ? "Login" : "Register Now"; document.getElementById("regFields").style.display = isLoginMode ? "none" : "block"; };
-window.handleAuth = async () => {
-    let m = document.getElementById("mobile").value; let p = document.getElementById("password").value; let n = document.getElementById("regName").value;
-    if(!m || !p) return;
-    try {
-        if(isLoginMode) await signInWithEmailAndPassword(auth, m+"@app.com", p);
-        else { let cred = await createUserWithEmailAndPassword(auth, m+"@app.com", p); await setDoc(doc(db, "userProfiles", cred.user.uid), { name: n }); }
-    } catch (e) { alert(e.message); }
-};
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        document.getElementById("initialScreen").style.display = "none";
-        document.getElementById("authSection").style.display = "none";
-        let p = await getDoc(doc(db, "userProfiles", user.uid));
-        document.getElementById("displayUserName").innerText = p.exists() ? p.data().name : "User";
-        document.getElementById("dashboard").style.display = "block"; 
-        document.getElementById("nav").style.display = "flex";
-        tab('dash');
-    }
-});
-
-window.calculateAnalytics = async () => {
-    const h = document.getElementById("analyticsContent");
-    h.innerHTML = "🔄 Calculating...";
-    let totalIncome = 0; let totalFuel = 0; let totalExpenses = 0;
-    try {
-        const collections = ['customers', 'fuel', 'expenses'];
-        for(let col of collections) {
-            const snap = await getDocs(collection(db, "users", auth.currentUser.uid, col));
-            snap.forEach(dDoc => {
-                let d = dDoc.data();
-                if(d.total) {
-                    let val = parseFloat(d.total.replace('₹', '').replace(',', '').trim()) || 0;
-                    if(col === 'customers') totalIncome += val;
-                    if(col === 'fuel') totalFuel += val;
-                    if(col === 'expenses') totalExpenses += val;
-                }
-            });
-        }
-        let netBalance = totalIncome - totalFuel - totalExpenses;
-        let color = netBalance >= 0 ? '#28a745' : '#dc3545';
-        h.innerHTML = `<div class="hist-card"><div class="hist-title">Business Summary</div><div class="hist-row"><span>Total Income:</span> <b style="color:#28a745;">+ ₹${totalIncome.toFixed(2)}</b></div><div class="hist-row"><span>Total Fuel:</span> <b style="color:#dc3545;">- ₹${totalFuel.toFixed(2)}</b></div><div class="hist-row"><span>Total Expenses:</span> <b style="color:#dc3545;">- ₹${totalExpenses.toFixed(2)}</b></div><hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;"><div class="hist-row" style="font-size:18px;"><span><b>Net Balance:</b></span> <b style="color:${color};">₹ ${netBalance.toFixed(2)}</b></div></div>`;
-    } catch(e) { h.innerHTML = "❌ Data loading error."; }
-};
-
-window.loadReportMenu = async (type) => {
-    const h = document.getElementById("reportData");
-    h.innerHTML = "🔄 Loading...";
-    const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, type), orderBy("ts", "desc")));
-    window.reportDataStorage = {};
-    snap.forEach(dDoc => {
-        let d = dDoc.data();
-        let date = (type === 'customers') ? (d.ts ? d.ts.toDate().toLocaleDateString('en-GB') : "N/A") : (d.date || "N/A");
-        if(!window.reportDataStorage[date]) window.reportDataStorage[date] = [];
-        window.reportDataStorage[date].push({...d, id: dDoc.id});
+    // Emergency Fallback to hide loader
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const loader = document.getElementById('page-loader');
+        if (loader) loader.style.display = 'none';
+      }, 1000);
     });
-    h.innerHTML = `<h3>📅 Select Date (${type.toUpperCase()})</h3>`;
-    const sortedDates = Object.keys(window.reportDataStorage).sort((a,b) => new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-')));
-    if (sortedDates.length === 0) h.innerHTML += "<p>No data found.</p>";
-    sortedDates.forEach(date => {
-        h.innerHTML += `<button onclick="showReportDetails('${type}', '${date}')" style="background:#6c757d; margin-bottom:5px;">📅 ${date}</button>`;
-    });
-};
+  </script>
 
-window.showReportDetails = (type, date) => {
-    let items = window.reportDataStorage[date];
-    let h = document.getElementById("reportData");
-    let html = `<button onclick="loadReportMenu('${type}')" style="background:#007bff; margin-bottom:10px;">⬅ Back</button><div class="hist-card" id="printArea"><div class="hist-title">Report: ${date}</div>`;
-    let totalAmt = 0; let totalMinutes = 0; let totalCustomers = 0; let totalLitres = 0;
-    items.forEach(d => {
-        if(type === 'customers') {
-            totalAmt += parseFloat(d.total.replace('₹', '').trim()) || 0;
-            totalCustomers++;
-            totalMinutes += parseInt(d.minutes) || 0;
-            html += `<div style="border-bottom:1px solid #eee; margin-bottom:10px;"><div class="hist-row"><span>👤 ${d.name} (${d.village})</span></div><div class="hist-row"><span>🕒 ${formatAMPM(d.start)}-${formatAMPM(d.end)}</span> <b>${d.minutes}</b></div><div class="hist-row"><span>💰 ₹${d.rate}</span> <b>${d.total}</b></div></div>`;
-        } else if(type === 'fuel') {
-            totalAmt += parseFloat(d.total.replace('₹', '').trim()) || 0;
-            totalLitres += parseFloat(d.litre) || 0;
-            html += `<div style="border-bottom:1px solid #eee; margin-bottom:8px; padding-bottom:5px;"><div class="hist-row"><span>🧪 ${d.litre}L @ ${d.rate}</span> <b>${d.total}</b></div><div class="hist-row" style="font-size:12px; color:#777;"><span>🕒 ${formatAMPM(d.time || '')}</span></div></div>`;
-        } else if(type === 'expenses') {
-            totalAmt += parseFloat(d.total.replace('₹', '').trim()) || 0;
-            for(let i=1; i<=10; i++) if(d.items && d.items[`d${i}`]) html += `<div class="hist-row"><span>${d.items[`d${i}`]}</span> <b>₹${d.items[`a${i}`]}</b></div>`;
-        }
-    });
-    if(type === 'customers') {
-        html += `<div class="hist-row" style="border-top:2px solid #007bff; margin-top:10px; padding-top:10px; font-weight:bold;"><span>👥 Total Customers:</span> <b>${totalCustomers}</b></div><div class="hist-row"><span>⏳ Total Minutes:</span> <b>${totalMinutes} Mins</b></div>`;
-    } else if (type === 'fuel') {
-        html += `<div class="hist-row" style="border-top:2px solid #007bff; margin-top:10px; padding-top:10px; font-weight:bold;"><span>🧪 Total Litres:</span> <b>${totalLitres.toFixed(2)} L</b></div>`;
-    }
-    html += `<div class="hist-total">Total Amount: ₹${totalAmt.toFixed(2)}</div></div><button onclick="printReport('printArea')" style="background:#28a745; width:100%; margin-top:10px;">🖨️ Print / Share</button>`;
-    h.innerHTML = html;
-};
-
-window.tab = (t) => {
-    document.getElementById("dashboard").style.display = (t==='dash'?'block':'none');
-    document.getElementById("report").style.display = (t==='report'?'block':'none');
-    document.getElementById("history").style.display = (t==='hist'?'block':'none');
-    document.getElementById("analytics").style.display = (t==='analytics'?'block':'none');
-    document.getElementById("n1").classList.toggle('active', t==='dash');
-    document.getElementById("n3").classList.toggle('active', t==='report');
-    document.getElementById("n2").classList.toggle('active', t==='hist');
-    document.getElementById("n4").classList.toggle('active', t==='analytics');
-    if(t==='hist') loadHist('customers');
-    if(t==='analytics') calculateAnalytics();
-};
-
-window.calcCust = () => { let r=Number(document.getElementById("rate").value); let s=document.getElementById("start").value; let e=document.getElementById("end").value; if(r&&s&&e) { let diff=(new Date("1970-01-01T"+e)-new Date("1970-01-01T"+s))/60000; if(diff<0) diff+=1440; document.getElementById("custRes").style.display="block"; document.getElementById("resMins").innerText=diff+" Mins"; document.getElementById("resTotal").innerText="₹ "+((r/60)*diff).toFixed(2); } };
-window.calcFuel = () => { let r=Number(document.getElementById("fRate").value); let l=Number(document.getElementById("fLitre").value); if(r&&l) { document.getElementById("fuelRes").style.display="block"; document.getElementById("resFuel").innerText="₹ "+(r*l).toFixed(2); } };
-window.calcTotal = () => { let t=0; for(let i=1; i<=10; i++) t+=parseFloat(document.getElementById(`a${i}`).value)||0; document.getElementById("eTotal").innerText=t.toFixed(2); };
-window.saveCustomer = async () => { let btn=document.getElementById("btnCust"); let docId=document.getElementById("docId").value; btn.disabled=true; let data={name:document.getElementById("name").value, village:document.getElementById("village").value, rate:document.getElementById("rate").value, start:document.getElementById("start").value, end:document.getElementById("end").value, minutes:document.getElementById("resMins").innerText, total:document.getElementById("resTotal").innerText, ts:new Date()}; try { if(docId) await updateDoc(doc(db, "users", auth.currentUser.uid, "customers", docId), data); else await addDoc(collection(db, "users", auth.currentUser.uid, "customers"), data); alert("Saved! ✅"); btn.style.display="none"; document.getElementById("nextCust").style.display="block"; } catch(e) { alert(e.message); btn.disabled=false; } };
-window.saveFuel = async () => { let btn=document.getElementById("btnFuel"); let fDocId=document.getElementById("fDocId").value; btn.disabled=true; let data={date:document.getElementById("fDate").value, time:document.getElementById("fTime").value, rate:document.getElementById("fRate").value, litre:document.getElementById("fLitre").value, total:document.getElementById("resFuel").innerText, ts:new Date()}; try { if(fDocId) await updateDoc(doc(db, "users", auth.currentUser.uid, "fuel", fDocId), data); else await addDoc(collection(db, "users", auth.currentUser.uid, "fuel"), data); alert("Saved! ✅"); btn.style.display="none"; document.getElementById("nextFuel").style.display="block"; } catch(e) { alert(e.message); btn.disabled=false; } };
-window.saveExpense = async () => { let btn=document.getElementById("btnExp"); btn.disabled=true; let eDocId=document.getElementById("eDocId").value; let items={}; for(let i=1;i<=10;i++){ items[`d${i}`]=document.getElementById(`d${i}`).value; items[`a${i}`]=document.getElementById(`a${i}`).value; } let data={date:document.getElementById("eDate").value, total:document.getElementById("eTotal").innerText, items:items, ts:new Date()}; try { if(eDocId) await updateDoc(doc(db, "users", auth.currentUser.uid, "expenses", eDocId), data); else await addDoc(collection(db, "users", auth.currentUser.uid, "expenses"), data); alert("Saved! ✅"); btn.style.display="none"; document.getElementById("nextExp").style.display="block"; } catch(e) { alert(e.message); btn.disabled=false; } };
-window.reset = (type) => { if(type==='cust'){ document.getElementById("docId").value=""; ['name','village','rate','start','end'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnCust").style.display="block"; document.getElementById("btnCust").disabled=false; document.getElementById("nextCust").style.display="none"; document.getElementById("custRes").style.display="none"; document.getElementById('liveTimer').innerText="00:00:00"; } else if(type==='fuel'){ document.getElementById("fDocId").value=""; ['fRate','fLitre','fTime'].forEach(i=>document.getElementById(i).value=""); document.getElementById("btnFuel").style.display="block"; document.getElementById("btnFuel").disabled=false; document.getElementById("nextFuel").style.display="none"; document.getElementById("fuelRes").style.display="none"; } else if(type==='exp'){ document.getElementById("eDocId").value=""; document.getElementById("eDate").value=""; for(let i=1;i<=10;i++){ document.getElementById(`d${i}`).value=""; document.getElementById(`a${i}`).value=""; } document.getElementById("eTotal").innerText="0"; document.getElementById("btnExp").style.display="block"; document.getElementById("btnExp").disabled=false; document.getElementById("nextExp").style.display="none"; } };
-
-window.loadHist = async (col) => { window.currentCol = col; window.allRecords = []; const h = document.getElementById("histData"); const searchInput = document.getElementById("histSearch"); searchInput.style.display = (col === 'customers') ? "block" : "none"; searchInput.value = ""; h.innerHTML = "🔄 Loading..."; const snap = await getDocs(query(collection(db, "users", auth.currentUser.uid, col), orderBy("ts", "desc"))); snap.forEach(dDoc => { let d = dDoc.data(); window.allRecords.push({...d, id: dDoc.id}); }); renderHist(window.allRecords, col); };
-window.filterHist = () => { const searchTerm = document.getElementById("histSearch").value.toLowerCase(); const filtered = window.allRecords.filter(d => d.name && d.name.toLowerCase().includes(searchTerm)); renderHist(filtered, window.currentCol); };
-window.renderHist = (data, col) => { const h = document.getElementById("histData"); h.innerHTML = ""; if(data.length === 0) h.innerHTML = "<p style='text-align:center;'>No records found.</p>"; data.forEach(d => { let dateStr = d.ts ? d.ts.toDate().toLocaleDateString('en-GB') : "N/A"; let content = `<div class="hist-card">`; if(col === 'customers'){ content += `<div class="hist-title">👤 ${d.name}</div><div class="hist-row"><span>Village:</span><b>${d.village || 'N/A'}</b></div><div class="hist-row"><span>Date:</span><b>${dateStr}</b></div><div class="hist-row"><span>Rate:</span><b>₹ ${d.rate}/hr</b></div><div class="hist-row"><span>Time:</span>${formatAMPM(d.start)}-${formatAMPM(d.end)}</div><div class="hist-row"><span>Minutes:</span><b>${d.minutes}</b></div><div class="hist-total">Total: ${d.total}</div>`; } else if(col === 'fuel'){ content += `<div class="hist-title">⛽ Fuel Entry</div><div class="hist-row"><span>Date:</span>${d.date} ${formatAMPM(d.time||'')}</div><div class="hist-row"><span>Fuel:</span><b>${d.litre} L</b></div><div class="hist-row"><span>Rate:</span><b>₹ ${d.rate}/L</b></div><div class="hist-total">Total: ${d.total}</div>`; } else if(col === 'expenses'){ content += `<div class="hist-title">💸 Info: ${d.date||'N/A'}</div>`; for(let i=1;i<=10;i++) if(d.items && d.items[`d${i}`]) content += `<div class="hist-row"><span>${d.items[`d${i}`]}</span><b>₹${d.items[`a${i}`]}</b></div>`; content += `<div class="hist-total">Total: ₹${d.total}</div>`; } 
-    content += `<button class="edit-btn" onclick="editData('${col}','${d.id}')">✏️ Edit</button> `;
-    content += `<button style="background:#dc3545; color:white; padding:5px 12px; font-size:12px; margin-top:10px; border-radius:6px; border:none; cursor:pointer;" onclick="deleteData('${col}','${d.id}')">🗑️ Delete</button></div>`; 
-    h.innerHTML += content; }); };
-
-window.editData = async (col, id) => { const s=await getDoc(doc(db, "users", auth.currentUser.uid, col, id)); const d=s.data(); tab('dash'); if(col==='customers'){ show('customer'); document.getElementById("docId").value=id; document.getElementById("name").value=d.name; document.getElementById("village").value=d.village; document.getElementById("rate").value=d.rate; document.getElementById("start").value=d.start; document.getElementById("end").value=d.end; calcCust(); } else if(col==='fuel'){ show('fuel'); document.getElementById("fDocId").value=id; document.getElementById("fDate").value=d.date; document.getElementById("fTime").value=d.time||""; document.getElementById("fRate").value=d.rate; document.getElementById("fLitre").value=d.litre; calcFuel(); } else if(col==='expenses'){ show('expense'); document.getElementById("eDocId").value=id; document.getElementById("eDate").value=d.date; for(let i=1;i<=10;i++){ document.getElementById(`d${i}`).value=d.items[`d${i}`]||""; document.getElementById(`a${i}`).value=d.items[`a${i}`]||""; } calcTotal(); } };
-window.editProfileName = async () => { const name=prompt("Enter new name:", document.getElementById("displayUserName").innerText); if(name) { await setDoc(doc(db, "userProfiles", auth.currentUser.uid), { name: name }, { merge: true }); document.getElementById("displayUserName").innerText=name; alert("Updated!"); } };
-window.changeUserPassword = async () => { const p=prompt("New Password (min 6 chars):"); if(p){ try { await updatePassword(auth.currentUser, p); alert("Done!"); } catch(e) { alert(e.message); } } };
-window.show = (id) => { ['customer','fuel','expense'].forEach(s=>document.getElementById(s).classList.remove('active-sec')); document.getElementById(id).classList.add('active-sec'); };
-const box=document.getElementById('expBox');
-for(let i=1;i<=10;i++) box.innerHTML+=`<div style="display:grid; grid-template-columns: 2fr 1fr; gap:5px; margin-bottom:5px;"><input id="d${i}" placeholder="Reason ${i}"><input id="a${i}" type="number" placeholder="Amt" oninput="calcTotal()"></div>`;
-document.getElementById('fDate').valueAsDate=new Date();
-</script>
 </body>
 </html>
